@@ -1,0 +1,8 @@
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--ink);
+}

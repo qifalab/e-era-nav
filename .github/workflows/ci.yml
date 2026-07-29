@@ -1,0 +1,46 @@
+name: Build
+
+# Pull requests and pushes compile the production bundle here. Deployment lives
+# in deploy.yml and never runs for a pull request, so a contributor cannot reach
+# production by opening one.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build production bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Report build output
+        run: |
+          echo '### Build output' >>"$GITHUB_STEP_SUMMARY"
+          { echo '```'; ls -la dist dist/assets; echo '```'; } >>"$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
