@@ -8,10 +8,12 @@ import {
   Moon,
   Search,
   Sun,
+  Terminal,
   WifiOff,
   X,
 } from 'lucide-react'
 import './SpatialApp.css'
+import { RevealLines, WaveText } from './oj/effects'
 import Directory from './components/Directory'
 import Modal from './components/Modal'
 import SceneErrorBoundary from './components/SceneErrorBoundary'
@@ -305,23 +307,23 @@ function App() {
       <header className={`command-bar ${mobileSearchOpen ? 'is-search-open' : ''}`}>
         <div className="brand-context">
           <button type="button" className="brand" onClick={goHome} aria-label="返回导航首页">
-          <picture className="brand__mark">
-            <source
-              type="image/webp"
-              srcSet="/brand/e-era-logo-96.webp 1x, /brand/e-era-logo-192.webp 2x"
-            />
-            <img
-              src="/brand/e-era-logo-96.png"
-              srcSet="/brand/e-era-logo-96.png 1x, /brand/e-era-logo-192.png 2x"
-              width="38"
-              height="38"
-              alt="E时代品牌标识"
-            />
-          </picture>
-          <span className="brand__copy">
-            <strong>E时代社团服务导航</strong>
-            <small>科技创新，连接未来</small>
-          </span>
+            <picture className="brand__mark">
+              <source
+                type="image/webp"
+                srcSet="/brand/e-era-logo-96.webp 1x, /brand/e-era-logo-192.webp 2x"
+              />
+              <img
+                src="/brand/e-era-logo-96.png"
+                srcSet="/brand/e-era-logo-96.png 1x, /brand/e-era-logo-192.png 2x"
+                width="38"
+                height="38"
+                alt="E时代品牌标识"
+              />
+            </picture>
+            <span className="brand__copy">
+              <strong>E时代社团服务导航</strong>
+              <small>科技创新，连接未来</small>
+            </span>
           </button>
           <BreadcrumbTrail
             category={selectedCategory}
@@ -433,6 +435,10 @@ function App() {
         </div>
 
         <div className="command-actions">
+          <a className="site-switch" href="/oj/" aria-label="切换到刷题导航副站">
+            <Terminal aria-hidden="true" />
+            <span>刷题导航</span>
+          </a>
           <button
             type="button"
             className="mode-switch"
@@ -538,10 +544,10 @@ function App() {
             </picture>
             <p className="eyebrow">科技创新，连接未来</p>
             <h1 id="hero-title">
-              <span>E时代社团</span>
-              <span>服务导航</span>
+              <WaveText text="E时代社团" />
+              <WaveText text="服务导航" />
             </h1>
-            <p>快速访问社团开发、通行证与团队服务。</p>
+            <RevealLines lines={['快速访问社团开发、通行证与团队服务。']} />
           </Motion.div>
 
           <nav className="region-legend" aria-label="服务分类">

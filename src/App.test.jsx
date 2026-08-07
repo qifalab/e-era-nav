@@ -44,16 +44,23 @@ describe('E时代社团服务导航', () => {
 
     expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
     expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.getByRole('link', { name: '切换到刷题导航副站' })).toHaveAttribute(
+      'href',
+      '/oj/',
+    )
     const heroTitle = screen.getByRole('heading', {
       level: 1,
       name: /E时代社团\s*服务导航/,
     })
     expect(heroTitle).toBeVisible()
-    expect([...heroTitle.querySelectorAll('span')].map((span) => span.textContent)).toEqual([
-      'E时代社团',
-      '服务导航',
-    ])
-    expect(screen.getByText(/快速访问社团开发、通行证与团队服务/)).toBeVisible()
+    expect(
+      [...heroTitle.querySelectorAll('.oj-visually-hidden')].map((span) => span.textContent),
+    ).toEqual(['E时代社团', '服务导航'])
+    expect(
+      screen.getByText(/快速访问社团开发、通行证与团队服务/, {
+        selector: '.oj-reveal__line',
+      }),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/让每个入口|拥有自己的位置|Spatial Service Atlas/)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
