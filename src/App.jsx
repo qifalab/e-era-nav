@@ -304,25 +304,25 @@ function App() {
 
       <header className={`command-bar ${mobileSearchOpen ? 'is-search-open' : ''}`}>
         <div className="brand-context">
-          <button type="button" className="brand" onClick={goHome} aria-label="返回导航首页">
-          <picture className="brand__mark">
-            <source
-              type="image/webp"
-              srcSet="/brand/e-era-logo-96.webp 1x, /brand/e-era-logo-192.webp 2x"
-            />
-            <img
-              src="/brand/e-era-logo-96.png"
-              srcSet="/brand/e-era-logo-96.png 1x, /brand/e-era-logo-192.png 2x"
-              width="38"
-              height="38"
-              alt="E时代品牌标识"
-            />
-          </picture>
-          <span className="brand__copy">
-            <strong>E时代社团服务导航</strong>
-            <small>科技创新，连接未来</small>
-          </span>
-          </button>
+          <a className="brand" href="/oj/" aria-label="切换到刷题导航副站">
+            <picture className="brand__mark">
+              <source
+                type="image/webp"
+                srcSet="/brand/e-era-logo-96.webp 1x, /brand/e-era-logo-192.webp 2x"
+              />
+              <img
+                src="/brand/e-era-logo-96.png"
+                srcSet="/brand/e-era-logo-96.png 1x, /brand/e-era-logo-192.png 2x"
+                width="38"
+                height="38"
+                alt="E时代品牌标识"
+              />
+            </picture>
+            <span className="brand__copy">
+              <strong>E时代社团服务导航</strong>
+              <small>点击切换刷题导航</small>
+            </span>
+          </a>
           <BreadcrumbTrail
             category={selectedCategory}
             service={selectedService}

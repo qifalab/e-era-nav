@@ -44,6 +44,10 @@ describe('E时代社团服务导航', () => {
 
     expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
     expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.getByRole('link', { name: '切换到刷题导航副站' })).toHaveAttribute(
+      'href',
+      '/oj/',
+    )
     const heroTitle = screen.getByRole('heading', {
       level: 1,
       name: /E时代社团\s*服务导航/,
@@ -134,7 +138,7 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByRole('navigation', { name: '当前服务路径' }),
     ).toHaveTextContent('总览/产品服务')
-    fireEvent.click(screen.getByRole('button', { name: '返回导航首页' }))
+    fireEvent.click(screen.getByRole('button', { name: '总览' }))
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
     ).not.toBeInTheDocument()
