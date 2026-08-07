@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
+  ArrowLeft,
   ArrowUpRight,
   GraduationCap,
   Layers3,
@@ -18,7 +19,7 @@ import { categories, ojs, stats, tipsVideo } from './OjData'
 import { WaveText, RevealLines, FadeInUp } from './effects'
 import './OjApp.css'
 
-const THEME_KEY = 'oj.theme'
+const THEME_KEY = 'e-era:theme'
 const PREFERS_DARK = '(prefers-color-scheme: dark)'
 
 function readStoredTheme() {
@@ -131,7 +132,8 @@ export default function OjApp() {
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    document.documentElement.dataset.ojTheme = theme
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
     persistTheme(theme)
   }, [theme])
 
@@ -159,20 +161,25 @@ export default function OjApp() {
 
       <header className="oj-header">
         <div className="oj-header__inner">
-          <a
-            className="oj-brand"
-            href="/"
-            aria-label="切换到主站导航（E时代社团服务导航）"
-            title="点击切换到主站"
-          >
-            <span className="oj-brand__mark" aria-hidden="true">
-              <span className="oj-brand__letter">E</span>
-            </span>
+          <div className="oj-brand">
+            <picture className="oj-brand__mark">
+              <source
+                type="image/webp"
+                srcSet="/brand/e-era-logo-96.webp 1x, /brand/e-era-logo-192.webp 2x"
+              />
+              <img
+                src="/brand/e-era-logo-96.png"
+                srcSet="/brand/e-era-logo-96.png 1x, /brand/e-era-logo-192.png 2x"
+                width="38"
+                height="38"
+                alt="E时代品牌标识"
+              />
+            </picture>
             <span className="oj-brand__copy">
               <strong>E时代社团服务导航</strong>
-              <small>刷题导航 · 点击切回主站</small>
+              <small>独立刷题导航副站</small>
             </span>
-          </a>
+          </div>
 
           <label className="oj-search">
             <Search aria-hidden="true" />
@@ -191,6 +198,10 @@ export default function OjApp() {
           </label>
 
           <div className="oj-header__actions">
+            <a className="oj-back" href="/" aria-label="返回主站导航">
+              <ArrowLeft aria-hidden="true" />
+              <span>返回主站</span>
+            </a>
             <button
               type="button"
               className="oj-icon-btn"

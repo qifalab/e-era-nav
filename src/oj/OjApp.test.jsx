@@ -6,7 +6,8 @@ import { ojs } from './OjData'
 describe('E时代刷题导航', () => {
   beforeEach(() => {
     localStorage.clear()
-    delete document.documentElement.dataset.ojTheme
+    delete document.documentElement.dataset.theme
+    document.documentElement.style.colorScheme = ''
   })
 
   it('展示全部平台并可返回主站', () => {
@@ -16,9 +17,11 @@ describe('E时代刷题导航', () => {
       [...container.querySelectorAll('.oj-visually-hidden')].map((node) => node.textContent),
     ).toEqual(['让每一次', '刷题都更高效'])
     expect(screen.getAllByRole('article')).toHaveLength(ojs.length)
-    expect(
-      screen.getByRole('link', { name: '切换到主站导航（E时代社团服务导航）' }),
-    ).toHaveAttribute('href', '/')
+    expect(screen.getByAltText('E时代品牌标识')).toHaveAttribute(
+      'src',
+      '/brand/e-era-logo-96.png',
+    )
+    expect(screen.getByRole('link', { name: '返回主站导航' })).toHaveAttribute('href', '/')
     expect(screen.getByRole('region', { name: '刷题小贴士' })).toBeInTheDocument()
   })
 
@@ -43,7 +46,8 @@ describe('E时代刷题导航', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
-    expect(document.documentElement).toHaveAttribute('data-oj-theme', 'dark')
-    expect(localStorage.getItem('oj.theme')).toBe('dark')
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+    expect(document.documentElement.style.colorScheme).toBe('dark')
+    expect(localStorage.getItem('e-era:theme')).toBe('dark')
   })
 })

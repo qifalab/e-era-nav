@@ -53,11 +53,14 @@ describe('E时代社团服务导航', () => {
       name: /E时代社团\s*服务导航/,
     })
     expect(heroTitle).toBeVisible()
-    expect([...heroTitle.querySelectorAll('span')].map((span) => span.textContent)).toEqual([
-      'E时代社团',
-      '服务导航',
-    ])
-    expect(screen.getByText(/快速访问社团开发、通行证与团队服务/)).toBeVisible()
+    expect(
+      [...heroTitle.querySelectorAll('.oj-visually-hidden')].map((span) => span.textContent),
+    ).toEqual(['E时代社团', '服务导航'])
+    expect(
+      screen.getByText(/快速访问社团开发、通行证与团队服务/, {
+        selector: '.oj-reveal__line',
+      }),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/让每个入口|拥有自己的位置|Spatial Service Atlas/)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
@@ -138,7 +141,7 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByRole('navigation', { name: '当前服务路径' }),
     ).toHaveTextContent('总览/产品服务')
-    fireEvent.click(screen.getByRole('button', { name: '总览' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回导航首页' }))
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
     ).not.toBeInTheDocument()
