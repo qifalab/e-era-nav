@@ -30,3 +30,6 @@ test-results
 
 # Local release bundles
 releases
+
+# WorkBuddy project memory
+.workbuddy

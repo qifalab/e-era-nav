@@ -11,7 +11,7 @@ describe('ServiceCardFace', () => {
     )
 
     expect(screen.getByText('E时代通行证')).toBeVisible()
-    expect(screen.getByText('统一身份认证与安全管理平台')).toBeVisible()
+    expect(screen.getByText(/统一身份认证与单点登录中心/)).toBeVisible()
     expect(container.querySelector('[data-original-icon="lock"] svg')).toBeInTheDocument()
 
     rerender(<ServiceCardFace service={service} variant="search" />)
