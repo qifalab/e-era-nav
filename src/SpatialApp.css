@@ -2044,11 +2044,6 @@ button {
   vertical-align: middle;
 }
 
-.service-badge--new {
-  background: color-mix(in srgb, #d94f4f 16%, transparent);
-  color: #c23c3c;
-}
-
 .service-badge--passport {
   background: color-mix(in srgb, #b77b2f 18%, transparent);
   color: #96631f;
@@ -2057,11 +2052,6 @@ button {
 .service-badge--core {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent);
-}
-
-:root[data-theme='dark'] .service-badge--new {
-  background: rgba(230, 120, 120, 0.2);
-  color: #f0a3a3;
 }
 
 :root[data-theme='dark'] .service-badge--passport {

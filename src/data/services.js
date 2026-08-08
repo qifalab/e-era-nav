@@ -102,7 +102,6 @@ export const services = [
     url: 'https://neweid.emoera.com/',
     icon: 'id-card',
     tags: ['数字身份', '作品集', '扫码'],
-    badge: 'new',
     position: [-8.8, 0.75, 8.8],
   },
   {
@@ -228,14 +227,12 @@ export const services = [
     url: 'https://www.duya.website/',
     icon: 'book',
     tags: ['笔记', '知识管理', '成员作品'],
-    badge: 'new',
     position: [-6.4, 0.75, -6.4],
   },
 ]
 
 export const badgeLabels = {
   core: '核心服务',
-  new: 'NEW',
   passport: '已接入通行证',
 }
 
