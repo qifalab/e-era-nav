@@ -198,7 +198,7 @@ export default function OjApp() {
           </label>
 
           <div className="oj-header__actions">
-            <a className="oj-back" href="/" aria-label="返回主站导航">
+            <a className="oj-switch" href="/" aria-label="返回主站导航">
               <ArrowLeft aria-hidden="true" />
               <span>返回主站</span>
             </a>
@@ -336,7 +336,10 @@ export default function OjApp() {
           <a href="https://www.qifalab.cn/" target="_blank" rel="noopener noreferrer">
             技术支持
           </a>
-          <a href="/">返回主站</a>
+          <a className="oj-footer__home" href="/">
+            <ArrowLeft aria-hidden="true" />
+            返回主站
+          </a>
           <a
             href="https://beian.miit.gov.cn/"
             target="_blank"

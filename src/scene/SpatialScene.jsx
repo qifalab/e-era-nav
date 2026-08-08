@@ -218,6 +218,7 @@ function Region({ category, active, onSelect, theme }) {
 function ServiceNode({
   service,
   selected,
+  hoveredService,
   onSelect,
   reducedMotion,
   paused,
@@ -227,13 +228,16 @@ function ServiceNode({
 }) {
   const [hovered, setHovered] = useState(false)
   const [pressed, setPressed] = useState(false)
+  const [ripple, setRipple] = useState(0)
   const iconConfig = getServiceIconConfig(service.slug)
+  const isHovered = hovered || hoveredService === service.slug
 
   return (
     <group
       position={[service.position[0], service.position[1] + 0.08, service.position[2]]}
       onClick={(event) => {
         event.stopPropagation()
+        setRipple(Date.now())
         onSelect(service.slug)
       }}
       onPointerDown={(event) => {
@@ -260,12 +264,13 @@ function ServiceNode({
           <ExtrudedServiceIcon
             iconId={iconConfig.geometry.source}
             color={iconConfig.geometry.color}
-            hovered={hovered}
+            hovered={isHovered}
             selected={selected}
             pressed={pressed}
             reducedMotion={reducedMotion || (paused && !selected)}
             quality={quality}
             theme={theme}
+            ripple={ripple}
           />
           {(hovered || selected) && (
             <Html position={[0, 1.35, 0]} center zIndexRange={[10, 0]}>
@@ -374,6 +379,7 @@ function World({
   spatialState,
   onCategory,
   onService,
+  hoveredService,
   theme,
   reducedMotion,
   quality,
@@ -430,6 +436,7 @@ function World({
           key={service.slug}
           service={service}
           selected={spatialState.service === service.slug}
+          hoveredService={hoveredService}
           onSelect={onService}
           reducedMotion={reducedMotion}
           paused={paused}
@@ -456,6 +463,7 @@ export default function SpatialScene({
   spatialState,
   onCategory,
   onService,
+  hoveredService,
   onFallback,
   theme,
   reducedMotion,
@@ -554,6 +562,7 @@ export default function SpatialScene({
           spatialState={spatialState}
           onCategory={onCategory}
           onService={onService}
+          hoveredService={hoveredService}
           theme={theme}
           reducedMotion={reducedMotion}
           quality={quality}

@@ -9,10 +9,11 @@ export default defineConfig({
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 1200,
+    emptyOutDir: false,
     rollupOptions: {
       input: {
         main: `${rootDir}index.html`,
-        oj: `${rootDir}oj/index.html`,
+        oj: `${rootDir}oj.html`,
       },
     },
   },

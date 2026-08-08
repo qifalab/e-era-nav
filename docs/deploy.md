@@ -6,17 +6,35 @@
 
 | 场景 | 触发的工作流 | 行为 |
 | --- | --- | --- |
-| Pull Request | `ci.yml` | 安装锁定依赖并执行生产构建，上传构建产物。**不会部署**，也拿不到部署密钥 |
-| 合并进 `main` | `ci.yml` + `deploy.yml` | 生产构建并发布到源站 |
+| Pull Request | `ci.yml` | lint、类型检查、单元测试、构建。**不会部署**，也拿不到部署密钥 |
+| 合并进 `master` | `ci.yml` + `deploy.yml` | 重新校验并构建，然后发布到源站并自动验收 |
 | 手动 | `deploy.yml`（workflow_dispatch） | `deploy` / `rollback` / `list` |
 
-`main` 是唯一会发布的分支。外部贡献者的 PR 只做生产构建，且 GitHub 不会向 PR 暴露仓库 Secret。
+`master` 是唯一会发布的分支。外部贡献者的 PR 只跑检查，因为 `pull_request` 事件在 GitHub 上拿不到仓库 Secret。
 
-自动化部署不运行 lint、类型检查、单元测试或 E2E；提交者应在推送前于本地完成需要的验证。3D E2E 需要真实硬件 WebGL 环境，不属于远端发布链路。
+### 关于 Playwright E2E
+
+E2E 不是 PR 的必过关卡，需要手动开启：给 PR 打 `run-e2e` 标签，或手动 dispatch `CI` 工作流。
+
+原因是这套测试跑的是真实 3D 场景，而 `src/lib/capabilities.js` 里的 `detectWebGL()` 有意把 SwiftShader / llvmpipe 等软件渲染器判为不可用（`capabilities.test.js` 里有对应断言）。GitHub 托管 runner 没有 GPU，页面会正确地降级到 2D 列表，于是所有 3D 断言都失败 —— 强行开 SwANGLE 也没用，因为拒绝是刻意的。**本地有 GPU 的机器上这套测试是全绿的**，请在本地跑：
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
 
 ## 发布机制
 
-`deploy.yml` 使用 UTC 时间戳和提交短 SHA 生成版本号，将 `dist/` 打包后交给受限部署接口。源站以版本目录保存发布结果并原子切换当前版本，避免出现半更新状态；具体服务器目录和账号配置不属于公开仓库。
+服务器上是"版本目录 + 符号链接"的原子切换：
+
+```
+/opt/datacore/frontend-sites/.releases/nav.emoera.com/<版本>/   构建产物
+/opt/datacore/frontend-sites/nav.emoera.com -> .releases/nav.emoera.com/<版本>
+```
+
+版本号形如 `20260728T145718Z-ad44394`（UTC 时间戳 + 提交短 SHA）。切换是一次 `rename(2)`，不存在"半新半旧"的中间状态；保留最近 5 个版本。
+
+发布由服务器上的 `/opt/datacore/web-sites/bin/site-deploy` 执行，`we.emoera.com` 用的是同一套机制。CI 侧的 `scripts/deploy-release.sh` 是唯一的客户端，两个站点仓库里的这个脚本内容一致，改动时请同步。
 
 发布完成后 CI 会直接回源验收（绕过 CDN）：确认 `current` 已切到新版本、`/` 返回 200、且本次构建产出的 `assets/*` 文件在源站可取到。任何一项不通过就让工作流失败。
 
@@ -44,7 +62,7 @@ npm run test:e2e   # 需要先 npx playwright install chromium
 
 ## CDN 与缓存
 
-`nav.emoera.com` 使用 CDN。源站缓存策略：
+`nav.emoera.com` 走腾讯云 EdgeOne，源站是 `DEPLOY_HOST` 这台机器的 80 端口（HTTP 回源，用户侧 HTTPS 由 EdgeOne 终结）。源站缓存策略：
 
 - `/assets/*`：`public, max-age=31536000, immutable` —— Vite 产物带内容哈希，改动必然换文件名
 - `/brand/*`、`/app-icons/*`：`public, max-age=86400`（无内容哈希，按天回源校验）
@@ -58,9 +76,9 @@ npm run test:e2e   # 需要先 npx playwright install chromium
 
 | 名称 | 内容 |
 | --- | --- |
-| `DEPLOY_HOST` | 源站地址 |
-| `DEPLOY_USER` | 受限部署账号 |
+| `DEPLOY_HOST` | 源站 IP |
+| `DEPLOY_USER` | 服务器上的部署账号（`deployer`） |
 | `DEPLOY_SSH_KEY` | 专用部署私钥（ed25519，无口令） |
 | `DEPLOY_KNOWN_HOSTS` | 源站主机公钥行，用于严格校验，避免中间人 |
 
-部署账号应使用受限权限，并将部署公钥绑定到只允许发布、回滚和查询版本的服务器端入口。任何 Secret 都不得提交到仓库。
+`deployer` 不是 root，没有 sudo shell，SSH 公钥绑定了 forced command：这把钥匙只能执行 `publish` / `activate` / `rollback` / `list` / `current`，且只能作用于允许清单里的站点。即使私钥泄露，也无法在服务器上执行任意命令。
