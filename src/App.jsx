@@ -1,14 +1,18 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { motion as Motion } from 'framer-motion'
 import {
   Box,
   ChevronRight,
   CircleHelp,
+  KeyRound,
+  Layers,
   Monitor,
   Moon,
   Search,
   Sun,
   Terminal,
+  Users,
   WifiOff,
   X,
 } from 'lucide-react'
@@ -18,7 +22,13 @@ import Directory from './components/Directory'
 import Modal from './components/Modal'
 import SceneErrorBoundary from './components/SceneErrorBoundary'
 import ServiceCardFace from './components/ServiceCardFace'
-import { categories, categoryBySlug, serviceBySlug, services } from './data/services'
+import {
+  categories,
+  categoryBySlug,
+  serviceBySlug,
+  services,
+  servicesByCategory,
+} from './data/services'
 import { detectCapabilities } from './lib/capabilities'
 import {
   buildLocation,
@@ -34,6 +44,7 @@ import {
   preferenceKeys,
   setStoredValue,
 } from './lib/preferences'
+import { runThemeTransition } from './lib/themeTransition'
 
 const SpatialScene = lazy(() => import('./scene/SpatialScene'))
 
@@ -52,6 +63,13 @@ function useMediaQuery(query) {
 
 function normalize(value) {
   return value.toLocaleLowerCase('zh-CN').replace(/\s+/g, '')
+}
+
+function CategoryGlyph({ id, className }) {
+  if (id === 'members') return <Users className={className} aria-hidden="true" />
+  if (id === 'products') return <Box className={className} aria-hidden="true" />
+  if (id === 'ecosystem') return <KeyRound className={className} aria-hidden="true" />
+  return <Layers className={className} aria-hidden="true" />
 }
 
 function BreadcrumbTrail({
@@ -117,8 +135,10 @@ function App() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [online, setOnline] = useState(navigator.onLine)
   const [cameraRevision, setCameraRevision] = useState(0)
+  const [hoveredService, setHoveredService] = useState(null)
   const searchRef = useRef(null)
   const helpTriggerRef = useRef(null)
+  const themeButtonRef = useRef(null)
   const helpWasOpenedRef = useRef(false)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
@@ -129,6 +149,19 @@ function App() {
     helpWasOpenedRef.current = true
     setHelpOpen(true)
   }, [])
+
+  const toggleTheme = useCallback(() => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    runThemeTransition({
+      origin: themeButtonRef.current,
+      reducedMotion,
+      apply: () => {
+        document.documentElement.dataset.theme = nextTheme
+        document.documentElement.style.colorScheme = nextTheme
+        flushSync(() => setTheme(nextTheme))
+      },
+    })
+  }, [reducedMotion, theme])
 
   const searchResults = useMemo(() => {
     const needle = normalize(query)
@@ -449,12 +482,15 @@ function App() {
             <span>{renderMode === '3d' ? '3D 图标' : '2D 列表'}</span>
           </button>
           <button
+            ref={themeButtonRef}
             type="button"
             className="icon-button theme-button"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={toggleTheme}
             aria-label={`切换到${theme === 'dark' ? '浅色' : '深色'}主题`}
           >
-            {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+            <span className="theme-button__glyph" key={theme}>
+              {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+            </span>
           </button>
           <button
             ref={helpTriggerRef}
@@ -504,6 +540,7 @@ function App() {
               >
                 <SpatialScene
                   spatialState={spatialState}
+                  hoveredService={hoveredService}
                   onCategory={focusCategory}
                   onService={focusService}
                   onFallback={fallbackTo2d}
@@ -559,9 +596,13 @@ function App() {
                 onClick={() => focusCategory(category.slug)}
                 style={{ '--legend-accent': category.accent }}
               >
-                <span>0{index + 1}</span>
+                <span className="region-legend__index">0{index + 1}</span>
+                <CategoryGlyph id={category.slug} className="region-legend__icon" />
                 <strong>{category.name}</strong>
                 <small>{category.description}</small>
+                <em className="region-legend__count">
+                  {servicesByCategory[category.slug].length}
+                </em>
               </button>
             ))}
           </nav>
@@ -582,9 +623,11 @@ function App() {
           spatialState={spatialState}
           recent={recent}
           direct={renderMode === '2d'}
+          reducedMotion={reducedMotion}
           onCategory={focusCategory}
           onService={focusService}
           onDirectVisit={recordVisit}
+          onHover={setHoveredService}
         />
       </main>
 

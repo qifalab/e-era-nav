@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { preferenceKeys } from './lib/preferences'
@@ -33,6 +33,10 @@ describe('E时代社团服务导航', () => {
   beforeEach(() => {
     localStorage.clear()
     window.history.replaceState({}, '', '/')
+    document.documentElement.classList.remove('theme-fading')
+    delete document.documentElement.dataset.themeTransition
+    delete document.startViewTransition
+    delete document.documentElement.animate
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       value: true,
@@ -73,6 +77,8 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByText('E时代社团成员项目', { selector: '.region-legend strong' }),
     ).toBeInTheDocument()
+    expect(document.querySelectorAll('.region-legend__icon')).toHaveLength(4)
+    expect(document.querySelectorAll('.region-legend__count')).toHaveLength(4)
   })
 
   it('使用本地品牌资产且不把品牌 Logo 用作模块图形', async () => {
@@ -179,11 +185,35 @@ describe('E时代社团服务导航', () => {
     expect(helpButton).toHaveFocus()
   })
 
-  it('支持明暗主题切换', async () => {
+  it('支持明暗主题切换，缺少 View Transitions 时使用淡变效果', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
     fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+    expect(document.documentElement).toHaveClass('theme-fading')
+  })
+
+  it('浏览器支持 View Transitions 时从主题按钮圆形揭示', async () => {
+    const animate = vi.fn()
+    const startViewTransition = vi.fn((update) => {
+      update()
+      return { ready: Promise.resolve(), finished: Promise.resolve() }
+    })
+    document.startViewTransition = startViewTransition
+    document.documentElement.animate = animate
+
+    render(<App />)
+    await screen.findByTestId('spatial-scene')
+    fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
+
+    expect(startViewTransition).toHaveBeenCalledTimes(1)
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+    await waitFor(() => expect(animate).toHaveBeenCalledTimes(1))
+    expect(animate.mock.calls[0][0].clipPath[0]).toMatch(/^circle\(0px at /)
+    expect(animate.mock.calls[0][1]).toMatchObject({
+      duration: 520,
+      pseudoElement: '::view-transition-new(root)',
+    })
   })
 
   it('搜索无结果时提供状态反馈并可清除', async () => {

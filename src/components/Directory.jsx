@@ -1,17 +1,59 @@
-import { Clock3 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowUpRight, Clock3 } from 'lucide-react'
 import { categories, serviceBySlug, services, servicesByCategory } from '../data/services'
 import { isSafeExternalUrl } from '../lib/navigation'
 import ServiceCardFace from './ServiceCardFace'
 
-function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisit }) {
-  const content = <ServiceCardFace service={service} />
+function ServiceCard({
+  service,
+  recent,
+  selected,
+  direct,
+  reducedMotion,
+  onSelect,
+  onDirectVisit,
+  onHover,
+}) {
+  const content = (
+    <>
+      <ServiceCardFace service={service} showArrow={false} />
+      <span className="service-card__foot">
+        <span className="service-card__meta">
+          {recent && (
+            <span className="service-card__recent">
+              <Clock3 aria-hidden="true" />
+              最近访问
+            </span>
+          )}
+        </span>
+        <span className="service-card__action">
+          {direct ? '前往' : '查看详情'}
+          <ArrowUpRight aria-hidden="true" />
+        </span>
+      </span>
+    </>
+  )
+
+  const motionProps = reducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 14, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { type: 'spring', stiffness: 300, damping: 25, mass: 0.7 },
+        whileHover: { y: -5, scale: 1.012 },
+        whileTap: { scale: 0.985 },
+      }
+
   return (
-    <article
+    <motion.article
       className={`service-card ${selected ? 'is-selected' : ''} ${
         recent ? 'has-recent' : ''
       }`}
       data-testid="service-card"
       data-service={service.slug}
+      onMouseEnter={() => onHover?.(service.slug)}
+      onMouseLeave={() => onHover?.(null)}
+      {...motionProps}
     >
       {direct && isSafeExternalUrl(service.url) ? (
         <a
@@ -36,15 +78,7 @@ function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisi
           {content}
         </button>
       )}
-      {recent && (
-        <div className="service-card__meta">
-          <span className="service-card__recent">
-            <Clock3 aria-hidden="true" />
-            最近访问
-          </span>
-        </div>
-      )}
-    </article>
+    </motion.article>
   )
 }
 
@@ -52,9 +86,11 @@ export default function Directory({
   spatialState,
   recent,
   direct = false,
+  reducedMotion = false,
   onCategory,
   onService,
   onDirectVisit,
+  onHover,
 }) {
   return (
     <section className="directory" id="service-directory" aria-labelledby="directory-title">
@@ -97,8 +133,10 @@ export default function Directory({
                   recent={recent.includes(service.slug)}
                   selected={spatialState.service === service.slug}
                   direct={direct}
+                  reducedMotion={reducedMotion}
                   onSelect={onService}
                   onDirectVisit={onDirectVisit}
+                  onHover={onHover}
                 />
               ))}
             </div>
