@@ -21,6 +21,7 @@ import './OjApp.css'
 
 const THEME_KEY = 'e-era:theme'
 const PREFERS_DARK = '(prefers-color-scheme: dark)'
+const EXTERNAL_LINK_REL = 'noopener noreferrer nofollow'
 
 function readStoredTheme() {
   try {
@@ -92,7 +93,7 @@ function OjCard({ oj, index }) {
           className="oj-card__visit"
           href={oj.url}
           target="_blank"
-          rel="noopener noreferrer"
+          rel={EXTERNAL_LINK_REL}
           aria-label={`访问 ${oj.name}`}
         >
           前往
@@ -312,7 +313,7 @@ export default function OjApp() {
             className="oj-tip__video"
             href={tipsVideo.url}
             target="_blank"
-            rel="noopener noreferrer"
+            rel={EXTERNAL_LINK_REL}
           >
             <PlayCircle aria-hidden="true" />
             <span>
@@ -330,17 +331,17 @@ export default function OjApp() {
           <small>独立子站 · 与主导航分离维护</small>
         </div>
         <nav aria-label="站点相关链接">
-          <a href="https://we.emoera.com/" target="_blank" rel="noopener noreferrer">
+          <a href="https://we.emoera.com/" target="_blank" rel={EXTERNAL_LINK_REL}>
             关于我们
           </a>
-          <a href="https://www.qifalab.cn/" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.qifalab.cn/" target="_blank" rel={EXTERNAL_LINK_REL}>
             技术支持
           </a>
           <a href="/">返回主站</a>
           <a
             href="https://beian.miit.gov.cn/"
             target="_blank"
-            rel="noopener noreferrer"
+            rel={EXTERNAL_LINK_REL}
           >
             蜀ICP备2024055741号
           </a>

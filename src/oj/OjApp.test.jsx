@@ -23,6 +23,19 @@ describe('E时代刷题导航', () => {
     )
     expect(screen.getByRole('link', { name: '返回主站导航' })).toHaveAttribute('href', '/')
     expect(screen.getByRole('region', { name: '刷题小贴士' })).toBeInTheDocument()
+
+    const externalLinks = [...container.querySelectorAll('a[href^="http"]')]
+    expect(externalLinks.length).toBeGreaterThan(0)
+    externalLinks.forEach((link) => {
+      expect(link.relList.contains('noopener')).toBe(true)
+      expect(link.relList.contains('noreferrer')).toBe(true)
+      expect(link.relList.contains('nofollow')).toBe(true)
+    })
+
+    expect(screen.getByRole('link', { name: '返回主站导航' })).not.toHaveAttribute(
+      'rel',
+      expect.stringContaining('nofollow'),
+    )
   })
 
   it('支持搜索、分类筛选与主题切换', async () => {
