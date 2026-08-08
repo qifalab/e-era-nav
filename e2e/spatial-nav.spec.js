@@ -80,7 +80,10 @@ test('保留 18 个语义入口并通过基础无障碍审计', async ({ page },
   await expect(page.getByRole('heading', { name: '选择服务，快速访问' })).toBeVisible()
   await expect(page.locator('.brand strong')).toHaveText('E时代社团服务导航')
   const heroLines = page.locator('#hero-title > span')
-  await expect(heroLines).toHaveText(['E时代社团', '服务导航'])
+  await expect(heroLines.locator('.oj-visually-hidden')).toHaveText([
+    'E时代社团',
+    '服务导航',
+  ])
   expect(
     await heroLines.evaluateAll((elements) =>
       elements.every((element) => getComputedStyle(element).whiteSpace === 'nowrap'),
@@ -158,6 +161,7 @@ test('品牌 Logo 本地加载且 18 项使用原版 icon 映射', async ({ page
   )
 
   const expectedIcons = [
+    'book',
     'lock',
     'code',
     'cloud',
@@ -175,7 +179,6 @@ test('品牌 Logo 本地加载且 18 项使用原版 icon 映射', async ({ page
     'bulb',
     'terminal',
     'flask',
-    'book',
   ]
   const cards = page.getByTestId('service-card')
   await expect(cards).toHaveCount(18)

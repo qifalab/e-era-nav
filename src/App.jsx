@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import './SpatialApp.css'
-import { FadeInUp, RevealLines, WaveText } from './oj/effects'
+import { RevealLines, WaveText } from './oj/effects'
 import Directory from './components/Directory'
 import Modal from './components/Modal'
 import SceneErrorBoundary from './components/SceneErrorBoundary'
@@ -151,16 +151,14 @@ function App() {
   }, [])
 
   const toggleTheme = useCallback(() => {
-    const next = theme === 'dark' ? 'light' : 'dark'
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
     runThemeTransition({
       origin: themeButtonRef.current,
       reducedMotion,
       apply: () => {
-        // Paint the new palette before the snapshot is taken, then keep React in sync
-        // synchronously so the sun/moon glyph belongs to the same frame.
-        document.documentElement.dataset.theme = next
-        document.documentElement.style.colorScheme = next
-        flushSync(() => setTheme(next))
+        document.documentElement.dataset.theme = nextTheme
+        document.documentElement.style.colorScheme = nextTheme
+        flushSync(() => setTheme(nextTheme))
       },
     })
   }, [reducedMotion, theme])
@@ -470,7 +468,7 @@ function App() {
         </div>
 
         <div className="command-actions">
-          <a className="site-switch" href="/oj" aria-label="切换到刷题导航副站">
+          <a className="site-switch" href="/oj/" aria-label="切换到刷题导航副站">
             <Terminal aria-hidden="true" />
             <span>刷题导航</span>
           </a>
@@ -540,12 +538,12 @@ function App() {
                   </div>
                 }
               >
-              <SpatialScene
-                spatialState={spatialState}
-                hoveredService={hoveredService}
-                onCategory={focusCategory}
-                onService={focusService}
-                onFallback={fallbackTo2d}
+                <SpatialScene
+                  spatialState={spatialState}
+                  hoveredService={hoveredService}
+                  onCategory={focusCategory}
+                  onService={focusService}
+                  onFallback={fallbackTo2d}
                   theme={theme}
                   reducedMotion={reducedMotion}
                   cameraRevision={cameraRevision}
@@ -586,28 +584,28 @@ function App() {
               <WaveText text="E时代社团" />
               <WaveText text="服务导航" />
             </h1>
-            <RevealLines
-              lines={[
-                '快速访问社团开发、通行证与团队服务。',
-                '从算法实验室到云端服务，一站式连接社团数字资产。',
-                '切换 3D 空间模式，用图标墙探索全部入口。',
-              ]}
-            />
-            <FadeInUp className="hero-stats" delay={0.15} aria-label="站点概览">
-              <div>
-                <strong>{services.length}</strong>
-                <span>服务入口</span>
-              </div>
-              <div>
-                <strong>{categories.length}</strong>
-                <span>服务分类</span>
-              </div>
-              <div>
-                <strong>{recent.length}</strong>
-                <span>最近访问</span>
-              </div>
-            </FadeInUp>
+            <RevealLines lines={['快速访问社团开发、通行证与团队服务。']} />
           </Motion.div>
+
+          <nav className="region-legend" aria-label="服务分类">
+            {categories.map((category, index) => (
+              <button
+                type="button"
+                key={category.slug}
+                className={spatialState.category === category.slug ? 'is-active' : ''}
+                onClick={() => focusCategory(category.slug)}
+                style={{ '--legend-accent': category.accent }}
+              >
+                <span className="region-legend__index">0{index + 1}</span>
+                <CategoryGlyph id={category.slug} className="region-legend__icon" />
+                <strong>{category.name}</strong>
+                <small>{category.description}</small>
+                <em className="region-legend__count">
+                  {servicesByCategory[category.slug].length}
+                </em>
+              </button>
+            ))}
+          </nav>
 
           {renderMode === '3d' && (
             <div className="gesture-hint" aria-hidden="true">
@@ -621,31 +619,6 @@ function App() {
           </a>
         </section>
 
-        <FadeInUp
-          as="nav"
-          className="region-legend"
-          aria-label="服务分类"
-          delay={0.05}
-        >
-          {categories.map((category, index) => (
-            <button
-              type="button"
-              key={category.slug}
-              className={spatialState.category === category.slug ? 'is-active' : ''}
-              onClick={() => focusCategory(category.slug)}
-              style={{ '--legend-accent': category.accent }}
-            >
-              <span className="region-legend__index">0{index + 1}</span>
-              <CategoryGlyph id={category.slug} className="region-legend__icon" />
-              <strong>{category.name}</strong>
-              <small>{category.description}</small>
-              <em className="region-legend__count">
-                {servicesByCategory[category.slug].length}
-              </em>
-            </button>
-          ))}
-        </FadeInUp>
-
         <Directory
           spatialState={spatialState}
           recent={recent}
@@ -656,34 +629,6 @@ function App() {
           onDirectVisit={recordVisit}
           onHover={setHoveredService}
         />
-
-        <FadeInUp as="section" className="nav-tips" aria-labelledby="nav-tips-title" delay={0.05}>
-          <div className="nav-tips__intro">
-            <p className="eyebrow">使用贴士</p>
-            <h2 id="nav-tips-title">更快找到你需要的服务</h2>
-          </div>
-          <div className="nav-tips__grid">
-            <article className="nav-tip">
-              <Search aria-hidden="true" />
-              <strong>随时搜索</strong>
-              <p>按 ⌘K / Ctrl K 唤起搜索框，输入名称即可直达服务。</p>
-            </article>
-            <article className="nav-tip">
-              <Layers aria-hidden="true" />
-              <strong>按类浏览</strong>
-              <p>按 Alt 1–4 聚焦成员项目、产品服务、通行证生态与团队官网。</p>
-            </article>
-            <article className="nav-tip">
-              <Terminal aria-hidden="true" />
-              <strong>刷题导航</strong>
-              <p>前往独立副站，集中管理你的刷题与竞赛平台。</p>
-            </article>
-          </div>
-          <a className="nav-tips__cta" href="/oj" rel="noopener noreferrer">
-            打开刷题导航
-            <ChevronRight aria-hidden="true" />
-          </a>
-        </FadeInUp>
       </main>
 
       <footer className="site-footer">

@@ -17,9 +17,7 @@ function runFallback(apply) {
   root.classList.add(FADE_CLASS)
   apply()
   window.clearTimeout(fadeTimer)
-  fadeTimer = window.setTimeout(() => {
-    root.classList.remove(FADE_CLASS)
-  }, FADE_DURATION)
+  fadeTimer = window.setTimeout(() => root.classList.remove(FADE_CLASS), FADE_DURATION)
 }
 
 function readOrigin(origin) {
@@ -30,11 +28,6 @@ function readOrigin(origin) {
   return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
 }
 
-/**
- * Switches the theme with a circular reveal that grows out of the toggle button.
- * Falls back to a short colour cross-fade when View Transitions are unavailable,
- * and to an instant swap when the visitor asked for reduced motion.
- */
 export function runThemeTransition({ origin, reducedMotion = false, apply }) {
   if (typeof apply !== 'function') return
 
@@ -84,14 +77,6 @@ export function runThemeTransition({ origin, reducedMotion = false, apply }) {
     })
     .catch(() => {})
 
-  const clear = () => {
-    delete root.dataset.themeTransition
-  }
+  const clear = () => delete root.dataset.themeTransition
   transition.finished.then(clear, clear)
-}
-
-export const themeTransitionInternals = {
-  REVEAL_DURATION,
-  FADE_CLASS,
-  FADE_DURATION,
 }

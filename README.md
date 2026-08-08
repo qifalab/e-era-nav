@@ -1,33 +1,23 @@
-# e-era-nav
+# E时代导航
 
-E时代导航站（`https://nav.emoera.com/`）。Vite + 原生 JS/Three.js 构建的单页应用，聚合 E时代生态的产品服务、通行证生态与团队入口。
+E时代导航是 E时代社团的统一服务入口，集中展示社团产品、成员作品、通行证生态和团队站点。
 
-## 快速开始
+访问网站：[nav.emoera.com](https://nav.emoera.com/)
 
-```bash
-nvm use        # Node 22，见 .nvmrc
-npm ci
-npm run dev
-```
+## 你可以在这里找到
 
-## 常用命令
+- **成员项目**：发现社团成员创作的产品与作品。
+- **产品服务**：快速进入 E时代通行证、云服务、IDE、信任中心等常用服务。
+- **通行证生态链**：查看已经接入 E时代统一登录的应用。
+- **团队与官网**：访问 ACM 算法团队、E时代团队、妙计实验室和启发实验室等站点。
+- **刷题导航**：通过 [/oj/](https://nav.emoera.com/oj/) 查找算法学习、在线评测、竞赛和开发资源。
 
-| 命令 | 说明 |
-| --- | --- |
-| `npm run dev` | 开发服务器 |
-| `npm run build` | 生产构建，输出到 `dist/` |
-| `npm run preview` | 预览构建结果 |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest 单元测试 |
-| `npm run test:e2e` | Playwright 端到端测试 |
+网站提供空间化 3D 导航，同时支持更轻量的 2D 列表模式；也可以直接搜索服务。手机、平板、键盘操作和减少动态效果偏好均受到支持。
 
-## 提交与发布
+## 参与完善
 
-PR 只会跑检查，合并进 `master` 才会自动发布到线上。流程、回滚方式与所需 Secret 见 [`docs/deploy.md`](docs/deploy.md)。
+如果发现链接失效、介绍有误，或者希望补充新的 E时代相关项目，欢迎提交 Issue 或 Pull Request。
 
-## 其他文档
+## 开源许可
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — 架构与设计约束
-- [`CARD-3D-DESIGN.md`](CARD-3D-DESIGN.md) — 3D 卡片设计
-- [`CONTENT-AUDIT.md`](CONTENT-AUDIT.md) — 内容核对
+源代码与文档采用 [Apache License 2.0](LICENSE)。E时代名称、标识、商标和品牌素材不包含在该授权中，详见 [NOTICE](NOTICE)。

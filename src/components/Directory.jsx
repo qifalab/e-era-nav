@@ -4,12 +4,21 @@ import { categories, serviceBySlug, services, servicesByCategory } from '../data
 import { isSafeExternalUrl } from '../lib/navigation'
 import ServiceCardFace from './ServiceCardFace'
 
-function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisit, reducedMotion, onHover }) {
+function ServiceCard({
+  service,
+  recent,
+  selected,
+  direct,
+  reducedMotion,
+  onSelect,
+  onDirectVisit,
+  onHover,
+}) {
   const content = (
     <>
       <ServiceCardFace service={service} showArrow={false} />
       <span className="service-card__foot">
-        <span className={`service-card__meta ${recent ? '' : 'is-empty'}`}>
+        <span className="service-card__meta">
           {recent && (
             <span className="service-card__recent">
               <Clock3 aria-hidden="true" />
@@ -24,20 +33,17 @@ function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisi
       </span>
     </>
   )
+
   const motionProps = reducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 18, scale: 0.96 },
+        initial: { opacity: 0, y: 14, scale: 0.98 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        transition: {
-          type: 'spring',
-          stiffness: 320,
-          damping: 24,
-          mass: 0.7,
-        },
-        whileHover: { y: -6, scale: 1.015 },
+        transition: { type: 'spring', stiffness: 300, damping: 25, mass: 0.7 },
+        whileHover: { y: -5, scale: 1.012 },
         whileTap: { scale: 0.985 },
       }
+
   return (
     <motion.article
       className={`service-card ${selected ? 'is-selected' : ''} ${
@@ -72,7 +78,6 @@ function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisi
           {content}
         </button>
       )}
-
     </motion.article>
   )
 }

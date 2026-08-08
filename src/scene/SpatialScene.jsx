@@ -237,7 +237,7 @@ function ServiceNode({
       position={[service.position[0], service.position[1] + 0.08, service.position[2]]}
       onClick={(event) => {
         event.stopPropagation()
-        setRipple(Date.now())
+        setRipple((value) => value + 1)
         onSelect(service.slug)
       }}
       onPointerDown={(event) => {

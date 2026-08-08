@@ -35,6 +35,8 @@ describe('E时代社团服务导航', () => {
     window.history.replaceState({}, '', '/')
     document.documentElement.classList.remove('theme-fading')
     delete document.documentElement.dataset.themeTransition
+    delete document.startViewTransition
+    delete document.documentElement.animate
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       value: true,
@@ -46,16 +48,23 @@ describe('E时代社团服务导航', () => {
 
     expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
     expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.getByRole('link', { name: '切换到刷题导航副站' })).toHaveAttribute(
+      'href',
+      '/oj/',
+    )
     const heroTitle = screen.getByRole('heading', {
       level: 1,
       name: /E时代社团\s*服务导航/,
     })
     expect(heroTitle).toBeVisible()
-    expect([...heroTitle.querySelectorAll('.fx-wave')].map((span) => span.textContent)).toEqual([
-      'E时代社团',
-      '服务导航',
-    ])
-    expect(screen.getByText(/快速访问社团开发、通行证与团队服务/, { selector: '.fx-reveal__line' })).toBeInTheDocument()
+    expect(
+      [...heroTitle.querySelectorAll('.oj-visually-hidden')].map((span) => span.textContent),
+    ).toEqual(['E时代社团', '服务导航'])
+    expect(
+      screen.getByText(/快速访问社团开发、通行证与团队服务/, {
+        selector: '.oj-reveal__line',
+      }),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/让每个入口|拥有自己的位置|Spatial Service Atlas/)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
@@ -68,6 +77,8 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByText('E时代社团成员项目', { selector: '.region-legend strong' }),
     ).toBeInTheDocument()
+    expect(document.querySelectorAll('.region-legend__icon')).toHaveLength(4)
+    expect(document.querySelectorAll('.region-legend__count')).toHaveLength(4)
   })
 
   it('使用本地品牌资产且不把品牌 Logo 用作模块图形', async () => {
@@ -136,7 +147,7 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByRole('navigation', { name: '当前服务路径' }),
     ).toHaveTextContent('总览/产品服务')
-    fireEvent.click(screen.getByRole('button', { name: '总览' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回导航首页' }))
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
     ).not.toBeInTheDocument()
@@ -174,7 +185,7 @@ describe('E时代社团服务导航', () => {
     expect(helpButton).toHaveFocus()
   })
 
-  it('支持明暗主题切换，缺少 View Transitions 时以淡变降级', async () => {
+  it('支持明暗主题切换，缺少 View Transitions 时使用淡变效果', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
     fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
@@ -182,7 +193,7 @@ describe('E时代社团服务导航', () => {
     expect(document.documentElement).toHaveClass('theme-fading')
   })
 
-  it('支持 View Transitions 时以圆形揭示切换主题', async () => {
+  it('浏览器支持 View Transitions 时从主题按钮圆形揭示', async () => {
     const animate = vi.fn()
     const startViewTransition = vi.fn((update) => {
       update()
@@ -191,24 +202,18 @@ describe('E时代社团服务导航', () => {
     document.startViewTransition = startViewTransition
     document.documentElement.animate = animate
 
-    try {
-      render(<App />)
-      await screen.findByTestId('spatial-scene')
-      fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
+    render(<App />)
+    await screen.findByTestId('spatial-scene')
+    fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
 
-      expect(startViewTransition).toHaveBeenCalledTimes(1)
-      expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
-      expect(document.documentElement).not.toHaveClass('theme-fading')
-
-      await waitFor(() => expect(animate).toHaveBeenCalledTimes(1))
-      const [keyframes, options] = animate.mock.calls[0]
-      expect(keyframes.clipPath[0]).toMatch(/^circle\(0px at /)
-      expect(keyframes.clipPath[1]).not.toBe(keyframes.clipPath[0])
-      expect(options.pseudoElement).toBe('::view-transition-new(root)')
-    } finally {
-      delete document.startViewTransition
-      delete document.documentElement.animate
-    }
+    expect(startViewTransition).toHaveBeenCalledTimes(1)
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+    await waitFor(() => expect(animate).toHaveBeenCalledTimes(1))
+    expect(animate.mock.calls[0][0].clipPath[0]).toMatch(/^circle\(0px at /)
+    expect(animate.mock.calls[0][1]).toMatchObject({
+      duration: 520,
+      pseudoElement: '::view-transition-new(root)',
+    })
   })
 
   it('搜索无结果时提供状态反馈并可清除', async () => {

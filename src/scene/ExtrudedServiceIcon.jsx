@@ -27,8 +27,9 @@ export default function ExtrudedServiceIcon({
   const iconLayer = useRef(null)
   const iconMaterialRef = useRef(null)
   const rippleRef = useRef(null)
+  const rippleMaterialRef = useRef(null)
   const rippleStart = useRef(-1)
-  const rippleActiveRef = useRef(false)
+  const rippleActive = useRef(false)
   const camera = useThree((state) => state.camera)
   const invalidate = useThree((state) => state.invalidate)
   const geometry = useMemo(
@@ -62,24 +63,26 @@ export default function ExtrudedServiceIcon({
       }),
     [color],
   )
-  const rippleMaterialRef = useRef(null)
 
   useEffect(() => {
     iconMaterialRef.current = materials.icon
+    return () => Object.values(materials).forEach((material) => material.dispose())
+  }, [materials])
+
+  useEffect(() => {
     rippleMaterialRef.current = rippleMaterial
     return () => {
-      Object.values(materials).forEach((material) => material.dispose())
       rippleMaterialRef.current = null
       rippleMaterial.dispose()
     }
-  }, [materials, rippleMaterial])
+  }, [rippleMaterial])
 
   useEffect(() => {
-    if (!ripple) return
+    if (!ripple || reducedMotion) return
     rippleStart.current = -1
-    rippleActiveRef.current = true
+    rippleActive.current = true
     invalidate()
-  }, [ripple, invalidate])
+  }, [invalidate, reducedMotion, ripple])
 
   useEffect(() => invalidate(), [hovered, invalidate, pressed, selected])
 
@@ -135,30 +138,35 @@ export default function ExtrudedServiceIcon({
     moving ||= Math.abs(nextRotation - targetIconRotation) > 0.001
     iconLayer.current.rotation.y = nextRotation
 
-    const t = state.clock.elapsedTime
     if (iconMaterialRef.current) {
-      const base = selected ? 0.22 : hovered ? 0.11 : 0.04
-      const breathe = hovered && !reducedMotion ? 0.05 * (0.5 + 0.5 * Math.sin(t * 2.4)) : 0
-      iconMaterialRef.current.emissiveIntensity = base + breathe
+      iconMaterialRef.current.emissiveIntensity = selected
+        ? 0.22
+        : hovered
+          ? 0.11
+          : 0.04
     }
 
-    if (rippleActiveRef.current) {
-      if (rippleStart.current < 0) rippleStart.current = t
-      const p = Math.min((t - rippleStart.current) / 0.6, 1)
-      if (rippleRef.current) {
-        const scale = 0.35 + p * 3.2
-        rippleRef.current.scale.set(scale, scale, scale)
-        rippleMaterialRef.current.opacity = (1 - p) * 0.55
+    if (rippleActive.current) {
+      const elapsed = state.clock.elapsedTime
+      if (rippleStart.current < 0) rippleStart.current = elapsed
+      const progress = Math.min((elapsed - rippleStart.current) / 0.6, 1)
+
+      if (rippleRef.current && rippleMaterialRef.current) {
+        const scale = 0.35 + progress * 3.2
+        rippleRef.current.scale.setScalar(scale)
+        rippleMaterialRef.current.opacity = (1 - progress) * 0.55
         rippleRef.current.visible = true
       }
-      if (p >= 1) {
-        rippleActiveRef.current = false
+
+      if (progress >= 1) {
+        rippleActive.current = false
         if (rippleRef.current) rippleRef.current.visible = false
+      } else {
+        invalidate()
       }
-      invalidate()
     }
 
-    if ((moving || hovered) && !reducedMotion) invalidate()
+    if (moving && !reducedMotion) invalidate()
   })
 
   return (

@@ -41,7 +41,7 @@ describe('service catalog', () => {
     })
   })
 
-  it('retains the current remote-master destinations', () => {
+  it('retains the current production destinations', () => {
     expect(
       Object.fromEntries(services.map(({ slug, url }) => [slug, url])),
     ).toEqual(
