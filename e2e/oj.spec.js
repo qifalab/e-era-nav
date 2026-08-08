@@ -12,6 +12,13 @@ test('刷题导航可访问、可筛选且没有严重无障碍问题', async ({
   await expect(page.getByRole('article')).toHaveCount(ojs.length)
   await expect(page.locator('.oj-card').last()).toHaveCSS('opacity', '1')
   await expect(page.locator('.oj-reveal__line').first()).toHaveCSS('opacity', '1')
+  const externalRelValues = await page
+    .locator('a[href^="http://"], a[href^="https://"]')
+    .evaluateAll((links) => links.map((link) => link.rel.split(/\s+/).filter(Boolean)))
+  expect(externalRelValues.length).toBeGreaterThan(0)
+  externalRelValues.forEach((tokens) => {
+    expect(tokens).toEqual(expect.arrayContaining(['noopener', 'noreferrer', 'nofollow']))
+  })
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(1)
