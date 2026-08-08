@@ -23,6 +23,8 @@ describe('E时代刷题导航', () => {
     )
     expect(screen.getByRole('link', { name: '返回主站导航' })).toHaveAttribute('href', '/')
     expect(screen.getByRole('region', { name: '刷题小贴士' })).toBeInTheDocument()
+    expect(container.querySelector('.oj-tip__video')).not.toBeInTheDocument()
+    expect(container.querySelector('a[href*="bilibili.com"]')).not.toBeInTheDocument()
 
     const externalLinks = [...container.querySelectorAll('a[href^="http"]')]
     expect(externalLinks.length).toBeGreaterThan(0)

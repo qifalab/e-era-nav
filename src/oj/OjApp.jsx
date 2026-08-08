@@ -13,9 +13,8 @@ import {
   Trophy,
   Briefcase,
   Code2,
-  PlayCircle,
 } from 'lucide-react'
-import { categories, ojs, stats, tipsVideo } from './OjData'
+import { categories, ojs, stats } from './OjData'
 import { WaveText, RevealLines, FadeInUp } from './effects'
 import './OjApp.css'
 
@@ -309,19 +308,6 @@ export default function OjApp() {
               <strong>求职</strong>：牛客 / 力扣企业题库，结合面经针对性练习。
             </li>
           </ol>
-          <a
-            className="oj-tip__video"
-            href={tipsVideo.url}
-            target="_blank"
-            rel={EXTERNAL_LINK_REL}
-          >
-            <PlayCircle aria-hidden="true" />
-            <span>
-              <strong>{tipsVideo.title}</strong>
-              <small>{tipsVideo.url}</small>
-            </span>
-            <ArrowUpRight aria-hidden="true" />
-          </a>
         </FadeInUp>
       </main>
 

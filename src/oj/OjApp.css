@@ -759,62 +759,6 @@ main {
   font-weight: 600;
   margin-right: 4px;
 }
-.oj-tip__video {
-  margin-top: 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  border-radius: var(--oj-radius);
-  background: var(--oj-accent-soft);
-  color: var(--oj-ink);
-  text-decoration: none;
-  border: 1px dashed color-mix(in srgb, var(--oj-brand) 40%, transparent);
-  transition:
-    background-color 0.16s var(--oj-ease),
-    border-color 0.16s var(--oj-ease),
-    transform 0.2s var(--oj-spring);
-}
-.oj-tip__video:active {
-  transform: scale(0.985);
-  transition-duration: 0.07s;
-}
-.oj-tip__video:hover {
-  background: color-mix(in srgb, var(--oj-brand) 18%, transparent);
-  border-color: var(--oj-brand);
-  transform: translateY(-1px);
-}
-.oj-tip__video > svg:first-child {
-  width: 28px;
-  height: 28px;
-  color: var(--oj-brand);
-  flex: 0 0 auto;
-}
-.oj-tip__video > span {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.oj-tip__video strong {
-  font-size: 0.92rem;
-  color: var(--oj-ink);
-  font-weight: 600;
-}
-.oj-tip__video small {
-  font-size: 0.74rem;
-  color: var(--oj-ink-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.oj-tip__video > svg:last-child {
-  width: 16px;
-  height: 16px;
-  color: var(--oj-ink-muted);
-  flex: 0 0 auto;
-}
 
 /* ==================== Footer ==================== */
 
