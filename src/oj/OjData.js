@@ -270,10 +270,3 @@ export const stats = {
 for (const oj of ojs) {
   if (stats[oj.category] !== undefined) stats[oj.category] += 1
 }
-
-// 学习路径小贴士中提到的 B 站视频，用于 hero 区展示
-export const tipsVideo = {
-  title: '学习过程中有些困惑和迷茫，推荐一下这个 UP 的视频',
-  url: 'https://space.bilibili.com/182121317?spm_id_from=333.337.0.0',
-  author: 'B 站 UP 主',
-}

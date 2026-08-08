@@ -12,6 +12,8 @@ test('刷题导航可访问、可筛选且没有严重无障碍问题', async ({
   await expect(page.getByRole('article')).toHaveCount(ojs.length)
   await expect(page.locator('.oj-card').last()).toHaveCSS('opacity', '1')
   await expect(page.locator('.oj-reveal__line').first()).toHaveCSS('opacity', '1')
+  await expect(page.locator('.oj-tip__video')).toHaveCount(0)
+  await expect(page.locator('a[href*="bilibili.com"]')).toHaveCount(0)
   const externalRelValues = await page
     .locator('a[href^="http://"], a[href^="https://"]')
     .evaluateAll((links) => links.map((link) => link.rel.split(/\s+/).filter(Boolean)))
