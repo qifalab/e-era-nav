@@ -1,6 +1,12 @@
-import { motion } from 'framer-motion'
-import { ArrowUpRight, Clock3 } from 'lucide-react'
-import { categories, serviceBySlug, services, servicesByCategory } from '../data/services'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowUpRight, Clock3, SearchX } from 'lucide-react'
+import {
+  categories,
+  onboardingSteps,
+  serviceBySlug,
+  services,
+  servicesByCategory,
+} from '../data/services'
 import { isSafeExternalUrl } from '../lib/navigation'
 import ServiceCardFace from './ServiceCardFace'
 
@@ -16,7 +22,7 @@ function ServiceCard({
 }) {
   const content = (
     <>
-      <ServiceCardFace service={service} showArrow={false} />
+      <ServiceCardFace service={service} showArrow={false} showTags showBadge />
       <span className="service-card__foot">
         <span className="service-card__meta">
           {recent && (
@@ -37,8 +43,10 @@ function ServiceCard({
   const motionProps = reducedMotion
     ? {}
     : {
+        layout: true,
         initial: { opacity: 0, y: 14, scale: 0.98 },
         animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, scale: 0.95, transition: { duration: 0.16 } },
         transition: { type: 'spring', stiffness: 300, damping: 25, mass: 0.7 },
         whileHover: { y: -5, scale: 1.012 },
         whileTap: { scale: 0.985 },
@@ -92,6 +100,11 @@ export default function Directory({
   onDirectVisit,
   onHover,
 }) {
+  const activeCategory = spatialState.category
+  const visibleCategories = activeCategory
+    ? categories.filter((category) => category.slug === activeCategory)
+    : categories
+
   return (
     <section className="directory" id="service-directory" aria-labelledby="directory-title">
       <div className="directory__intro">
@@ -100,49 +113,107 @@ export default function Directory({
         <p>按成员项目、产品服务、通行证生态链、团队与官网分类浏览。</p>
       </div>
 
-      <div className="directory__regions">
-        {categories.map((category) => (
-          <section
-            className={`directory-region ${
-              spatialState.category === category.slug ? 'is-active' : ''
-            }`}
-            key={category.slug}
-            id={`region-${category.slug}`}
-            style={{ '--region-accent': category.accent }}
-            aria-labelledby={`region-title-${category.slug}`}
-          >
-            <button
-              type="button"
-              className="directory-region__heading"
-              onClick={() => onCategory(category.slug)}
-              aria-label={`聚焦${category.name}`}
-            >
-              <span className="region-index">0{categories.indexOf(category) + 1}</span>
-              <span>
-                <strong id={`region-title-${category.slug}`}>{category.name}</strong>
-                <small>{category.description}</small>
-              </span>
-              <span>{servicesByCategory[category.slug].length} 个入口</span>
-            </button>
+      {activeCategory && (
+        <div className="directory__filter-bar" role="status">
+          <span>
+            已筛选「{categories.find((c) => c.slug === activeCategory)?.name}」·{' '}
+            {servicesByCategory[activeCategory].length} 个入口
+          </span>
+          <button type="button" onClick={() => onCategory(null)}>
+            显示全部服务
+          </button>
+        </div>
+      )}
 
-            <div className="service-grid">
-              {servicesByCategory[category.slug].map((service) => (
-                <ServiceCard
-                  key={service.slug}
-                  service={service}
-                  recent={recent.includes(service.slug)}
-                  selected={spatialState.service === service.slug}
-                  direct={direct}
-                  reducedMotion={reducedMotion}
-                  onSelect={onService}
-                  onDirectVisit={onDirectVisit}
-                  onHover={onHover}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+      <motion.div className="directory__regions" layout={!reducedMotion}>
+        <AnimatePresence mode="popLayout" initial={false}>
+          {visibleCategories.map((category) => (
+            <motion.section
+              layout={!reducedMotion}
+              key={category.slug}
+              className={`directory-region ${
+                spatialState.category === category.slug ? 'is-active' : ''
+              }`}
+              id={`region-${category.slug}`}
+              style={{ '--region-accent': category.accent }}
+              aria-labelledby={`region-title-${category.slug}`}
+              initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: -8, transition: { duration: 0.16 } }}
+              transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+            >
+              <button
+                type="button"
+                className="directory-region__heading"
+                onClick={() => onCategory(category.slug)}
+                aria-label={`聚焦${category.name}`}
+              >
+                <span className="region-index">0{categories.indexOf(category) + 1}</span>
+                <span>
+                  <strong id={`region-title-${category.slug}`}>{category.name}</strong>
+                  <small>{category.description}</small>
+                </span>
+                <span>{servicesByCategory[category.slug].length} 个入口</span>
+              </button>
+
+              <div className="service-grid">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {servicesByCategory[category.slug].map((service) => (
+                    <ServiceCard
+                      key={service.slug}
+                      service={service}
+                      recent={recent.includes(service.slug)}
+                      selected={spatialState.service === service.slug}
+                      direct={direct}
+                      reducedMotion={reducedMotion}
+                      onSelect={onService}
+                      onDirectVisit={onDirectVisit}
+                      onHover={onHover}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </motion.section>
+          ))}
+        </AnimatePresence>
+      </motion.div>
+
+      {visibleCategories.length === 0 && (
+        <div className="directory__empty" role="status">
+          <SearchX aria-hidden="true" />
+          <p>该分类下暂无服务</p>
+          <button type="button" onClick={() => onCategory(null)}>
+            返回全部服务
+          </button>
+        </div>
+      )}
+
+      <section className="onboarding" aria-labelledby="onboarding-title">
+        <div className="onboarding__intro">
+          <p className="eyebrow">新成员指引</p>
+          <h2 id="onboarding-title">第一次来？三步接入社团</h2>
+        </div>
+        <ol className="onboarding__steps">
+          {onboardingSteps.map((item) => {
+            const target = serviceBySlug[item.slug]
+            return (
+              <li key={item.step}>
+                <span className="onboarding__index" aria-hidden="true">
+                  {item.step}
+                </span>
+                <strong>{item.title}</strong>
+                <p>{item.detail}</p>
+                {target && (
+                  <button type="button" onClick={() => onService(item.slug)}>
+                    前往 {target.name}
+                    <ArrowUpRight aria-hidden="true" />
+                  </button>
+                )}
+              </li>
+            )
+          })}
+        </ol>
+      </section>
 
       {recent.length > 0 && (
         <aside className="personal-index" aria-label="个人快捷入口">

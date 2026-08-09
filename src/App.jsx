@@ -5,6 +5,8 @@ import {
   Box,
   ChevronRight,
   CircleHelp,
+  Command,
+  Copy,
   KeyRound,
   Layers,
   Monitor,
@@ -22,12 +24,15 @@ import Directory from './components/Directory'
 import Modal from './components/Modal'
 import SceneErrorBoundary from './components/SceneErrorBoundary'
 import ServiceCardFace from './components/ServiceCardFace'
+import Spotlight from './components/Spotlight'
 import {
+  badgeLabels,
   categories,
   categoryBySlug,
   serviceBySlug,
   services,
   servicesByCategory,
+  siteStats,
 } from './data/services'
 import { detectCapabilities } from './lib/capabilities'
 import {
@@ -59,10 +64,6 @@ function useMediaQuery(query) {
   }, [query])
 
   return matches
-}
-
-function normalize(value) {
-  return value.toLocaleLowerCase('zh-CN').replace(/\s+/g, '')
 }
 
 function CategoryGlyph({ id, className }) {
@@ -129,14 +130,12 @@ function App() {
         : '',
   )
   const [recent, setRecent] = useState(() => getStoredArray(preferenceKeys.recent))
-  const [query, setQuery] = useState('')
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [activeSearchIndex, setActiveSearchIndex] = useState(0)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [spotlightOpen, setSpotlightOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [online, setOnline] = useState(navigator.onLine)
   const [cameraRevision, setCameraRevision] = useState(0)
   const [hoveredService, setHoveredService] = useState(null)
-  const searchRef = useRef(null)
   const helpTriggerRef = useRef(null)
   const themeButtonRef = useRef(null)
   const helpWasOpenedRef = useRef(false)
@@ -144,7 +143,7 @@ function App() {
 
   const selectedService = serviceBySlug[spatialState.service] || null
   const selectedCategory = categoryBySlug[spatialState.category] || null
-  const modalOpen = Boolean(selectedService || helpOpen)
+  const modalOpen = Boolean(selectedService || helpOpen || spotlightOpen)
   const openHelp = useCallback(() => {
     helpWasOpenedRef.current = true
     setHelpOpen(true)
@@ -162,18 +161,6 @@ function App() {
       },
     })
   }, [reducedMotion, theme])
-
-  const searchResults = useMemo(() => {
-    const needle = normalize(query)
-    if (!needle) return []
-    return services
-      .filter((service) =>
-        normalize(`${service.name}${service.description}${categoryBySlug[service.category].name}`).includes(
-          needle,
-        ),
-      )
-      .slice(0, 7)
-  }, [query])
 
   const navigateSpatial = useCallback((nextState, replace = false) => {
     const safeState = createSpatialState(nextState?.category, nextState?.service)
@@ -193,7 +180,7 @@ function App() {
   const focusCategory = useCallback(
     (slug) => {
       navigateSpatial(createSpatialState(slug, null))
-      if (renderMode === '2d') {
+      if (renderMode === '2d' && slug) {
         window.requestAnimationFrame(() => {
           document
             .getElementById(`region-${slug}`)
@@ -208,8 +195,7 @@ function App() {
     (slug) => {
       const service = serviceBySlug[slug]
       if (!service) return
-      setQuery('')
-      setMobileSearchOpen(false)
+      setSpotlightOpen(false)
       navigateSpatial(createSpatialState(service.category, service.slug))
     },
     [navigateSpatial],
@@ -269,23 +255,22 @@ function App() {
 
   useEffect(() => {
     const handleShortcut = (event) => {
-      if (modalOpen) return
       const target = event.target
       const editing =
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target instanceof HTMLSelectElement
-      if (editing && event.key !== 'Escape') return
 
       if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
-        if (compactViewport) {
-          setMobileSearchOpen(true)
-          window.requestAnimationFrame(() => searchRef.current?.focus())
-        } else {
-          searchRef.current?.focus()
-        }
-      } else if (event.altKey && event.key.toLowerCase() === 'h') {
+        if (!modalOpen) setSpotlightOpen(true)
+        return
+      }
+
+      if (modalOpen) return
+      if (editing && event.key !== 'Escape') return
+
+      if (event.altKey && event.key.toLowerCase() === 'h') {
         goHome()
       } else if (event.altKey && event.key.toLowerCase() === 'b') {
         goBack()
@@ -293,12 +278,14 @@ function App() {
         openHelp()
       } else if (event.altKey && ['1', '2', '3', '4'].includes(event.key)) {
         focusCategory(categories[Number(event.key) - 1].slug)
+      } else if (event.altKey && event.key === '0') {
+        focusCategory(null)
       }
     }
 
     window.addEventListener('keydown', handleShortcut)
     return () => window.removeEventListener('keydown', handleShortcut)
-  }, [compactViewport, focusCategory, goBack, goHome, modalOpen, openHelp])
+  }, [focusCategory, goBack, goHome, modalOpen, openHelp])
 
   const switchRenderMode = () => {
     if (renderMode === '2d') {
@@ -331,13 +318,26 @@ function App() {
     setStoredValue(preferenceKeys.introSeen, 'true')
   }
 
+  const copyServiceUrl = async (url) => {
+    try {
+      if (typeof navigator.clipboard?.writeText !== 'function') {
+        throw new Error('Clipboard API is unavailable')
+      }
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setCopied(false)
+    }
+  }
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#service-directory">
         跳到可访问服务目录
       </a>
 
-      <header className={`command-bar ${mobileSearchOpen ? 'is-search-open' : ''}`}>
+      <header className="command-bar">
         <div className="brand-context">
           <button type="button" className="brand" onClick={goHome} aria-label="返回导航首页">
             <picture className="brand__mark">
@@ -370,101 +370,25 @@ function App() {
         <button
           type="button"
           className="mobile-search-trigger"
-          onClick={() => {
-            const nextOpen = !mobileSearchOpen
-            setMobileSearchOpen(nextOpen)
-            if (nextOpen) {
-              window.requestAnimationFrame(() => searchRef.current?.focus())
-            } else {
-              setQuery('')
-              searchRef.current?.blur()
-            }
-          }}
-          aria-label={mobileSearchOpen ? '关闭搜索' : '打开搜索'}
-          aria-expanded={mobileSearchOpen}
-          aria-controls="global-search"
+          onClick={() => setSpotlightOpen(true)}
+          aria-label="打开搜索"
         >
-          {mobileSearchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+          <Search aria-hidden="true" />
         </button>
 
-        <div className={`command-center ${mobileSearchOpen ? 'is-mobile-open' : ''}`}>
-        <div className="search-console" id="global-search">
-          <Search aria-hidden="true" />
-          <input
-            ref={searchRef}
-            type="search"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value)
-              setActiveSearchIndex(0)
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'ArrowDown' && searchResults.length) {
-                event.preventDefault()
-                setActiveSearchIndex((index) => (index + 1) % searchResults.length)
-              }
-              if (event.key === 'ArrowUp' && searchResults.length) {
-                event.preventDefault()
-                setActiveSearchIndex(
-                  (index) => (index - 1 + searchResults.length) % searchResults.length,
-                )
-              }
-              if (event.key === 'Enter' && searchResults[activeSearchIndex]) {
-                event.preventDefault()
-                focusService(searchResults[activeSearchIndex].slug)
-              }
-              if (event.key === 'Escape') {
-                setQuery('')
-                setMobileSearchOpen(false)
-                event.currentTarget.blur()
-              }
-            }}
-            placeholder={`搜索 ${services.length} 个服务…`}
-            aria-label="搜索服务"
-            role="combobox"
-            aria-expanded={searchResults.length > 0}
-            aria-controls="search-results"
-            aria-autocomplete="list"
-            aria-activedescendant={
-              searchResults[activeSearchIndex]
-                ? `search-${searchResults[activeSearchIndex].slug}`
-                : undefined
-            }
-          />
-          {query && (
-            <button type="button" onClick={() => setQuery('')} aria-label="清除搜索">
-              <X aria-hidden="true" />
-            </button>
-          )}
-          {!query && (
-            <kbd className="search-shortcut" aria-hidden="true">
-              ⌘K
+        <div className="command-center">
+          <button
+            type="button"
+            className="search-trigger"
+            onClick={() => setSpotlightOpen(true)}
+            aria-label="打开服务命令面板"
+          >
+            <Search aria-hidden="true" />
+            <span>搜索 {services.length} 个服务、标签或分类…</span>
+            <kbd aria-hidden="true">
+              <Command />K
             </kbd>
-          )}
-          {searchResults.length > 0 && (
-            <div className="search-results" id="search-results" role="listbox">
-              {searchResults.map((service, index) => (
-                <button
-                  id={`search-${service.slug}`}
-                  key={service.slug}
-                  type="button"
-                  role="option"
-                  aria-selected={index === activeSearchIndex}
-                  className={index === activeSearchIndex ? 'is-active' : ''}
-                  onMouseEnter={() => setActiveSearchIndex(index)}
-                  onClick={() => focusService(service.slug)}
-                >
-                  <ServiceCardFace service={service} variant="search" showArrow={false} />
-                </button>
-              ))}
-            </div>
-          )}
-          {query && searchResults.length === 0 && (
-            <div className="search-results search-empty" role="status">
-              没有匹配的服务
-            </div>
-          )}
-        </div>
+          </button>
         </div>
 
         <div className="command-actions">
@@ -524,7 +448,11 @@ function App() {
       )}
 
       <main>
-        <section className={`spatial-stage spatial-stage--${renderMode}`} aria-labelledby="hero-title">
+        <section
+          className={`spatial-stage spatial-stage--${renderMode}`}
+          aria-labelledby="hero-title"
+          style={selectedCategory ? { '--stage-accent': selectedCategory.accent } : undefined}
+        >
           {renderMode === '3d' ? (
             <SceneErrorBoundary
               onError={() => fallbackTo2d('3D 图标场景加载失败，已切换到 2D 服务列表。')}
@@ -582,12 +510,80 @@ function App() {
             <p className="eyebrow">科技创新，连接未来</p>
             <h1 id="hero-title">
               <WaveText text="E时代社团" />
-              <WaveText text="服务导航" />
+              <WaveText text="服务导航" gradient />
             </h1>
             <RevealLines lines={['快速访问社团开发、通行证与团队服务。']} />
+            <dl className="hero-stats" aria-label="导航概览">
+              <div>
+                <dt>{siteStats.services}</dt>
+                <dd>服务入口</dd>
+              </div>
+              <div>
+                <dt>{siteStats.categories}</dt>
+                <dd>服务板块</dd>
+              </div>
+              <div>
+                <dt>{siteStats.passport}</dt>
+                <dd>接入通行证</dd>
+              </div>
+              <div>
+                <dt>{siteStats.domains}</dt>
+                <dd>服务域名</dd>
+              </div>
+            </dl>
           </Motion.div>
 
+          {renderMode === '2d' && (
+            <div className="hero-decoration" aria-hidden="true">
+              <svg viewBox="0 0 560 460" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="hdGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" style={{ stopColor: 'var(--accent)', stopOpacity: 0.16 }} />
+                    <stop offset="100%" style={{ stopColor: 'var(--accent)', stopOpacity: 0 }} />
+                  </radialGradient>
+                </defs>
+                <circle cx="300" cy="230" r="220" fill="url(#hdGlow)" />
+                <circle cx="300" cy="230" r="190" style={{ stroke: 'var(--border)' }} strokeWidth="1" />
+                <circle cx="300" cy="230" r="128" style={{ stroke: 'var(--border)' }} strokeWidth="1" strokeDasharray="2 8" />
+                <g style={{ stroke: 'var(--border)' }} strokeWidth="1">
+                  <line x1="300" y1="230" x2="118" y2="116" />
+                  <line x1="300" y1="230" x2="474" y2="150" />
+                  <line x1="300" y1="230" x2="436" y2="344" />
+                  <line x1="300" y1="230" x2="146" y2="334" />
+                </g>
+                <g fill="var(--surface-solid)" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="118" cy="116" r="6" />
+                  <circle cx="474" cy="150" r="6" />
+                  <circle cx="436" cy="344" r="6" />
+                  <circle cx="146" cy="334" r="6" />
+                </g>
+                <circle cx="300" cy="230" r="9" fill="currentColor" />
+                <g className="hero-decoration__orbit">
+                  <circle cx="300" cy="40" r="4" fill="currentColor" />
+                  <circle
+                    cx="300"
+                    cy="230"
+                    r="190"
+                    style={{ stroke: 'currentColor' }}
+                    strokeWidth="1.5"
+                    strokeDasharray="44 320"
+                    strokeOpacity="0.5"
+                  />
+                </g>
+              </svg>
+            </div>
+          )}
+
           <nav className="region-legend" aria-label="服务分类">
+            <button
+              type="button"
+              className={!spatialState.category ? 'is-active' : ''}
+              onClick={() => focusCategory(null)}
+              title="显示全部服务"
+            >
+              <span className="region-legend__label">全部</span>
+              <em className="region-legend__count">{services.length}</em>
+            </button>
             {categories.map((category, index) => (
               <button
                 type="button"
@@ -595,11 +591,12 @@ function App() {
                 className={spatialState.category === category.slug ? 'is-active' : ''}
                 onClick={() => focusCategory(category.slug)}
                 style={{ '--legend-accent': category.accent }}
+                title={category.name}
               >
-                <span className="region-legend__index">0{index + 1}</span>
-                <CategoryGlyph id={category.slug} className="region-legend__icon" />
-                <strong>{category.name}</strong>
-                <small>{category.description}</small>
+                <span className="region-legend__index" aria-hidden="true">
+                  {index + 1}
+                </span>
+                <span className="region-legend__label">{category.shortName}</span>
                 <em className="region-legend__count">
                   {servicesByCategory[category.slug].length}
                 </em>
@@ -678,7 +675,15 @@ function App() {
                 service={selectedService}
                 variant="detail"
                 showArrow={false}
+                showBadge
               />
+              {selectedService.tags?.length > 0 && (
+                <ul className="service-detail__tags" aria-label="服务标签">
+                  {selectedService.tags.map((tag) => (
+                    <li key={tag}>#{tag}</li>
+                  ))}
+                </ul>
+              )}
               <dl>
                 <div>
                   <dt>所属区域</dt>
@@ -687,6 +692,16 @@ function App() {
                 <div>
                   <dt>目标域名</dt>
                   <dd>{new URL(selectedService.url).hostname}</dd>
+                </div>
+                <div>
+                  <dt>服务状态</dt>
+                  <dd>
+                    {selectedService.badge
+                      ? badgeLabels[selectedService.badge]
+                      : online
+                        ? '正常开放'
+                        : '离线不可达'}
+                  </dd>
                 </div>
               </dl>
             </div>
@@ -712,6 +727,14 @@ function App() {
                   <ChevronRight aria-hidden="true" />
                 </button>
               )}
+              <button
+                type="button"
+                className="ghost-action"
+                onClick={() => copyServiceUrl(selectedService.url)}
+              >
+                <Copy aria-hidden="true" />
+                {copied ? '已复制' : '复制链接'}
+              </button>
             </div>
           </>
         )}
@@ -726,8 +749,8 @@ function App() {
           </div>
           <div>
             <span>02</span>
-            <strong>搜索服务</strong>
-            <p>输入服务名称或说明，直接找到对应的社团服务卡片。</p>
+            <strong>命令面板搜索</strong>
+            <p>⌘/Ctrl K 唤起命令面板，支持按名称、说明、标签与分类模糊匹配。</p>
           </div>
           <div>
             <span>03</span>
@@ -738,7 +761,7 @@ function App() {
         <dl className="shortcut-list">
           <div>
             <dt>⌘/Ctrl K</dt>
-            <dd>搜索</dd>
+            <dd>命令面板</dd>
           </div>
           <div>
             <dt>Alt H</dt>
@@ -753,6 +776,10 @@ function App() {
             <dd>聚焦区域</dd>
           </div>
           <div>
+            <dt>Alt 0</dt>
+            <dd>显示全部</dd>
+          </div>
+          <div>
             <dt>Alt ?</dt>
             <dd>帮助</dd>
           </div>
@@ -761,6 +788,13 @@ function App() {
           开始使用
         </button>
       </Modal>
+
+      <Spotlight
+        open={spotlightOpen}
+        recent={recent}
+        onClose={() => setSpotlightOpen(false)}
+        onSelect={focusService}
+      />
     </div>
   )
 }

@@ -71,14 +71,22 @@ describe('E时代社团服务导航', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '首页' })).not.toBeInTheDocument()
     expect(screen.getAllByTestId('service-card')).toHaveLength(18)
-    expect(screen.getByText('产品服务', { selector: '.region-legend strong' })).toBeInTheDocument()
-    expect(screen.getByText('通行证生态链', { selector: '.region-legend strong' })).toBeInTheDocument()
-    expect(screen.getByText('团队与官网', { selector: '.region-legend strong' })).toBeInTheDocument()
     expect(
-      screen.getByText('E时代社团成员项目', { selector: '.region-legend strong' }),
-    ).toBeInTheDocument()
-    expect(document.querySelectorAll('.region-legend__icon')).toHaveLength(4)
-    expect(document.querySelectorAll('.region-legend__count')).toHaveLength(4)
+      screen.getByRole('button', { name: '聚焦产品服务' }),
+    ).toHaveTextContent('产品服务')
+    expect(
+      screen.getByRole('button', { name: '聚焦通行证生态链' }),
+    ).toHaveTextContent('通行证生态')
+    expect(
+      screen.getByRole('button', { name: '聚焦团队与官网' }),
+    ).toHaveTextContent('团队与官网')
+    expect(
+      screen.getByRole('button', { name: '聚焦E时代社团成员项目' }),
+    ).toHaveTextContent('成员项目')
+    expect(document.querySelectorAll('.region-legend__icon')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: '打开服务命令面板' })).toBeVisible()
+    expect(screen.getByText('服务入口')).toBeVisible()
+    expect(screen.getByText('接入通行证')).toBeVisible()
   })
 
   it('使用本地品牌资产且不把品牌 Logo 用作模块图形', async () => {
@@ -114,6 +122,16 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByRole('navigation', { name: '当前服务路径' }),
     ).toHaveTextContent('总览/通行证生态链/E时代图床')
+  })
+
+  it('已有服务弹窗时不会叠加打开命令面板', async () => {
+    render(<App />)
+    await screen.findByTestId('spatial-scene')
+
+    fireEvent.click(screen.getByRole('button', { name: '查看 E时代云服务 详情' }))
+    expect(screen.getByRole('dialog', { name: 'E时代云服务' })).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+    expect(screen.queryByRole('dialog', { name: '服务命令面板' })).not.toBeInTheDocument()
   })
 
   it('完全移除收藏入口但保留最近访问', async () => {
@@ -219,6 +237,8 @@ describe('E时代社团服务导航', () => {
   it('搜索无结果时提供状态反馈并可清除', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
+
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
     const search = screen.getByRole('combobox', { name: '搜索服务' })
 
     fireEvent.change(search, { target: { value: '不存在的社团服务' } })
@@ -270,6 +290,7 @@ describe('E时代社团服务导航', () => {
     expect(screen.queryByRole('dialog', { name: 'E时代云服务' })).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(preferenceKeys.recent))[0]).toBe('era-cloud')
 
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
     const search = screen.getByRole('combobox', { name: '搜索服务' })
     fireEvent.change(search, { target: { value: 'E时代Git' } })
     fireEvent.keyDown(search, { key: 'Enter' })
