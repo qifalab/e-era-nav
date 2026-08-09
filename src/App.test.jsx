@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { preferenceKeys } from './lib/preferences'
+import { ojResourceCount } from './data/ojResources'
 
 vi.mock('./scene/SpatialScene', () => ({
   default: ({ onCategory, onService, onFallback }) => (
@@ -177,6 +178,23 @@ describe('E时代社团服务导航', () => {
     await screen.findByTestId('spatial-scene')
     fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+
+    // 切换按钮渲染成图标按钮：可重复切换，点击触发以按钮为圆心的涟漪过渡。
+    const switch_ = screen.getByRole('button', { name: '切换到浅色主题' })
+    expect(switch_.className).toMatch(/theme-button/)
+
+    // 不支持 View Transitions 的环境也能直接切：data-theme 立刻翻转。
+    const originalStartViewTransition = document.startViewTransition
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: undefined,
+    })
+    fireEvent.click(switch_)
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light')
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: originalStartViewTransition,
+    })
   })
 
   it('搜索无结果时提供状态反馈并可清除', async () => {
@@ -268,5 +286,37 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByRole('button', { name: '访问服务' }),
     ).toBeDisabled()
+  })
+
+  it('右上角胶囊可切换主/副导航并隔离资源与渲染模式', async () => {
+    render(<App />)
+    await screen.findByTestId('spatial-scene')
+
+    // 默认主导航：18 个社团服务卡片 + 3D 场景。
+    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(18)
+
+    // 切到副导航（OJ 刷题）。
+    fireEvent.click(
+      screen.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }),
+    )
+    expect(window.location.search).toContain('namespace=oj')
+    expect(screen.getByText('E时代 OJ 刷题导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.queryByTestId('spatial-scene')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: /E时代 OJ\s*刷题资源导航/ })).toBeInTheDocument()
+    expect(screen.getByText('Codeforces')).toBeInTheDocument()
+    expect(screen.getByText('洛谷')).toBeInTheDocument()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(ojResourceCount)
+    // 3D 模式切换在副导航下被禁用（强制 2D 列表）。
+    expect(
+      screen.getByRole('button', { name: '副导航固定为 2D 列表' }),
+    ).toBeDisabled()
+
+    // 切回主导航。
+    fireEvent.click(screen.getByRole('button', { name: '切换到主导航：E时代社团服务' }))
+    expect(window.location.search).not.toContain('namespace=oj')
+    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(18)
   })
 })

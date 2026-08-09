@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { services } from '../data/services'
 import {
+  ALL_ICON_DEFINITIONS,
   ICON_DEFINITIONS,
   SERVICE_ICON_REGISTRY,
   SERVICE_ICON_MAP,
@@ -36,7 +37,7 @@ describe('original icon registry', () => {
       expect(service.icon).toBe(SERVICE_ICON_MAP[service.slug])
       expect(ICON_DEFINITIONS[service.icon]).toBeDefined()
     })
-    expect(Object.isFrozen(ICON_DEFINITIONS)).toBe(true)
+    expect(Object.isFrozen(ALL_ICON_DEFINITIONS)).toBe(true)
     expect(Object.isFrozen(ICON_DEFINITIONS.lock.elements)).toBe(true)
     expect(Object.isFrozen(SERVICE_ICON_REGISTRY)).toBe(true)
   })

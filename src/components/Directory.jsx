@@ -1,5 +1,10 @@
 import { Clock3 } from 'lucide-react'
-import { categories, serviceBySlug, services, servicesByCategory } from '../data/services'
+import {
+  categories,
+  serviceBySlug,
+  services,
+  servicesByCategory,
+} from '../data/services'
 import { isSafeExternalUrl } from '../lib/navigation'
 import ServiceCardFace from './ServiceCardFace'
 
@@ -49,6 +54,15 @@ function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisi
 }
 
 export default function Directory({
+  namespace = 'main',
+  namespaceLabel,
+  introEyebrow,
+  introTitle,
+  introDescription,
+  categories: categoriesProp,
+  services: servicesProp,
+  serviceBySlug: serviceBySlugProp,
+  servicesByCategory: servicesByCategoryProp,
   spatialState,
   recent,
   direct = false,
@@ -56,67 +70,100 @@ export default function Directory({
   onService,
   onDirectVisit,
 }) {
+  // Use override props when provided; otherwise fall back to the main catalog.
+  const activeCategories = categoriesProp ?? categories
+  const activeServices = servicesProp ?? services
+  const activeServiceBySlug = serviceBySlugProp ?? serviceBySlug
+  const activeServicesByCategory = servicesByCategoryProp ?? servicesByCategory
+
   return (
-    <section className="directory" id="service-directory" aria-labelledby="directory-title">
+    <section
+      className={`directory directory--${namespace}`}
+      id="service-directory"
+      aria-labelledby="directory-title"
+      data-namespace={namespace}
+    >
       <div className="directory__intro">
-        <p className="eyebrow">{services.length} 个社团服务入口</p>
-        <h2 id="directory-title">选择服务，快速访问</h2>
-        <p>按成员项目、产品服务、通行证生态链、团队与官网分类浏览。</p>
+        <p className="eyebrow">
+          {introEyebrow || `${activeServices.length} 个社团服务入口`}
+        </p>
+        <h2 id="directory-title">{introTitle || '选择服务，快速访问'}</h2>
+        <p>
+          {introDescription ||
+            '按成员项目、产品服务、通行证生态链、团队与官网分类浏览。'}
+        </p>
+        {namespaceLabel && <small className="directory__namespace">{namespaceLabel}</small>}
       </div>
 
       <div className="directory__regions">
-        {categories.map((category) => (
-          <section
-            className={`directory-region ${
-              spatialState.category === category.slug ? 'is-active' : ''
-            }`}
-            key={category.slug}
-            id={`region-${category.slug}`}
-            style={{ '--region-accent': category.accent }}
-            aria-labelledby={`region-title-${category.slug}`}
-          >
-            <button
-              type="button"
-              className="directory-region__heading"
-              onClick={() => onCategory(category.slug)}
-              aria-label={`聚焦${category.name}`}
+        {activeCategories.map((category) => {
+          const categoryServices =
+            activeServicesByCategory && activeServicesByCategory[category.slug]
+              ? activeServicesByCategory[category.slug]
+              : activeServices.filter((service) => service.category === category.slug)
+          return (
+            <section
+              className={`directory-region ${
+                spatialState?.category === category.slug ? 'is-active' : ''
+              }`}
+              key={category.slug}
+              id={`region-${category.slug}`}
+              style={{ '--region-accent': category.accent }}
+              aria-labelledby={`region-title-${category.slug}`}
             >
-              <span className="region-index">0{categories.indexOf(category) + 1}</span>
-              <span>
-                <strong id={`region-title-${category.slug}`}>{category.name}</strong>
-                <small>{category.description}</small>
-              </span>
-              <span>{servicesByCategory[category.slug].length} 个入口</span>
-            </button>
+              <button
+                type="button"
+                className="directory-region__heading"
+                onClick={() => onCategory?.(category.slug)}
+                aria-label={`聚焦${category.name}`}
+              >
+                <span className="region-index">
+                  0{activeCategories.indexOf(category) + 1}
+                </span>
+                <span>
+                  <strong id={`region-title-${category.slug}`}>{category.name}</strong>
+                  <small>{category.description}</small>
+                </span>
+                <span>{categoryServices.length} 个入口</span>
+              </button>
 
-            <div className="service-grid">
-              {servicesByCategory[category.slug].map((service) => (
-                <ServiceCard
-                  key={service.slug}
-                  service={service}
-                  recent={recent.includes(service.slug)}
-                  selected={spatialState.service === service.slug}
-                  direct={direct}
-                  onSelect={onService}
-                  onDirectVisit={onDirectVisit}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
+              <div className="service-grid">
+                {categoryServices.map((service) => (
+                  <ServiceCard
+                    key={service.slug}
+                    service={service}
+                    recent={recent.includes(service.slug)}
+                    selected={spatialState?.service === service.slug}
+                    direct={direct}
+                    onSelect={onService}
+                    onDirectVisit={onDirectVisit}
+                  />
+                ))}
+              </div>
+            </section>
+          )
+        })}
       </div>
 
-      {recent.length > 0 && (
+      {recent.length > 0 && activeServiceBySlug && (
         <aside className="personal-index" aria-label="个人快捷入口">
           <div>
             <span>最近访问</span>
-            {recent.map((slug) =>
-              serviceBySlug[slug] ? (
-                <button key={slug} type="button" onClick={() => onService(slug)}>
-                  {serviceBySlug[slug].name}
+            {recent.map((slug) => {
+              const service = activeServiceBySlug[slug]
+              if (!service) return null
+              const category = activeCategories.find(
+                (entry) => entry.slug === service.category,
+              )
+              return (
+                <button key={slug} type="button" onClick={() => onService?.(slug)}>
+                  {service.name}
+                  {category && namespace === 'oj' ? (
+                    <span className="personal-index__hint">·{category.shortName}</span>
+                  ) : null}
                 </button>
-              ) : null,
-            )}
+              )
+            })}
           </div>
         </aside>
       )}

@@ -1,5 +1,7 @@
 const element = (tag, attrs) => ({ tag, attrs })
 
+import { OJ_ICON_DEFINITIONS, OJ_ICON_REGISTRY } from './ojIconRegistry'
+
 export const ICON_DEFINITIONS = {
   lock: {
     label: '锁',
@@ -130,6 +132,8 @@ export const ICON_DEFINITIONS = {
   },
 }
 
+// ICON_DEFINITIONS 顶层不再整体冻结，以便副导航继续追加本地矢量。
+// 每个 definition 仍冻结，保证属性不被改动。
 Object.values(ICON_DEFINITIONS).forEach((definition) => {
   definition.viewBox = '0 0 24 24'
   definition.strokeWidth = 2
@@ -138,7 +142,12 @@ Object.values(ICON_DEFINITIONS).forEach((definition) => {
   Object.freeze(definition.elements)
   Object.freeze(definition)
 })
-Object.freeze(ICON_DEFINITIONS)
+// 注意：保留「17 种原图标」这一事实描述，但顶层不再冻结以便扩展注册。
+
+export const ALL_ICON_DEFINITIONS = Object.freeze({
+  ...ICON_DEFINITIONS,
+  ...OJ_ICON_DEFINITIONS,
+})
 
 export const SERVICE_ICON_REGISTRY = {
   'era-passport': { originalIcon: 'lock', geometry: { source: 'lock', color: '#3b82f6' } },
@@ -202,7 +211,7 @@ const allowedAttributes = new Set([
 ])
 
 export function getIconSvgMarkup(iconId) {
-  const definition = ICON_DEFINITIONS[iconId]
+  const definition = ALL_ICON_DEFINITIONS[iconId]
   if (!definition) throw new Error(`Unknown original icon: ${iconId}`)
   const children = definition.elements
     .map(({ tag, attrs }) => {
@@ -226,5 +235,5 @@ export function getIconSvgMarkup(iconId) {
 }
 
 export function getServiceIconConfig(serviceId) {
-  return SERVICE_ICON_REGISTRY[serviceId] || null
+  return SERVICE_ICON_REGISTRY[serviceId] || OJ_ICON_REGISTRY[serviceId] || null
 }

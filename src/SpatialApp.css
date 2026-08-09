@@ -442,6 +442,53 @@ button {
   transform: scale(0.96);
 }
 
+/* View Transitions API 主题切换（以按钮为圆心的圆形涟漪过渡） */
+::view-transition-old(root) {
+  animation: theme-fade-out 540ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+::view-transition-new(root) {
+  animation: theme-clip-in 540ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0s !important;
+  }
+}
+
+@keyframes theme-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes theme-clip-in {
+  from {
+    clip-path: circle(0px at var(--theme-origin-x, 50%) var(--theme-origin-y, 50%));
+  }
+  to {
+    clip-path: circle(
+      var(--theme-origin-r, 1500px) at var(--theme-origin-x, 50%) var(--theme-origin-y, 50%)
+    );
+  }
+}
+
+/* 主/副导航切换沿用 mode-switch 外观；副导航激活时取品牌色文字，保持与主导航配色一致 */
+.mode-switch.is-oj {
+  color: var(--accent);
+}
+
+:root[data-theme='dark'] .mode-switch.is-oj {
+  color: var(--accent);
+}
+
+:where(.mode-switch[disabled]) {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .system-banner {
   display: flex;
   align-items: center;
@@ -475,16 +522,30 @@ button {
 }
 
 .spatial-stage--2d {
-  height: 310px;
-  min-height: 310px;
+  height: auto;
+  min-height: 320px;
+  padding: 28px max(24px, calc((100% - 1180px) / 2)) 32px;
+  display: grid;
+  grid-template-areas:
+    'hero hero'
+    'legend legend';
+  row-gap: 22px;
+  align-content: start;
 }
 
 .spatial-stage--2d .hero-copy {
-  top: 42px;
+  position: static;
+  grid-area: hero;
+  top: auto;
+  left: auto;
+  width: 100%;
+  max-width: min(560px, 100%);
+  margin: 0;
+  pointer-events: auto;
 }
 
 .spatial-stage--2d .hero-copy h1 {
-  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  font-size: clamp(2.1rem, 4vw, 3.2rem);
 }
 
 .spatial-stage--2d .hero-copy > p:last-child {
@@ -494,7 +555,13 @@ button {
 }
 
 .spatial-stage--2d .region-legend {
-  bottom: 18px;
+  position: static;
+  grid-area: legend;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  max-width: min(960px, 100%);
+  margin: 0;
 }
 
 .scene-canvas {
@@ -739,6 +806,108 @@ button {
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
+
+/* 副导航 OJ hero：背景沿用主导航 (spatial-stage--2d) 的网格 + canvas-bg，圆环装饰复用同款以保持视觉一致。 */
+.oj-hero {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  height: clamp(300px, 38vh, 400px);
+  min-height: 300px;
+  border-bottom: 1px solid var(--border);
+  background:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px),
+    var(--canvas-bg);
+  background-size: 48px 48px;
+  background-position: 0 0;
+}
+
+.oj-hero__backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.oj-hero__backdrop span {
+  position: absolute;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.oj-hero__backdrop span:nth-child(1) {
+  width: 28vw;
+  height: 28vw;
+  top: -8vw;
+  left: -6vw;
+}
+
+.oj-hero__backdrop span:nth-child(2) {
+  width: 28vw;
+  height: 28vw;
+  right: 30%;
+  bottom: -10%;
+}
+
+.oj-hero__backdrop span:nth-child(3) {
+  width: 28vw;
+  height: 28vw;
+  top: 4%;
+  right: 4%;
+}
+
+.oj-hero__copy {
+  /* 与主导航 .hero-copy 完全一致的位置/尺寸：左上绝对定位的固定宽块，避免整行撑满导致文字偏中 */
+  position: absolute;
+  z-index: 2;
+  top: 11%;
+  left: max(28px, calc((100% - 1180px) / 2));
+  width: min(430px, 38vw);
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.oj-hero__copy h1 {
+  margin: 12px 0 0;
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  font-weight: 680;
+  letter-spacing: -0.065em;
+  line-height: 0.96;
+  color: var(--ink);
+}
+
+.oj-hero__copy h1 span {
+  display: block;
+}
+
+.oj-hero__copy > p:last-child {
+  max-width: 390px;
+  margin: 20px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+/* OJ hero 内的「直接浏览资源列表」链接：作为 .oj-hero 直接子元素，复用全局胶囊样式；放到右下角避开左上文字块 */
+.oj-hero .directory-jump {
+  position: absolute;
+  top: auto;
+  bottom: 22px;
+  right: max(28px, calc((100% - 1180px) / 2));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+}
+
+.oj-hero .directory-jump:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  color: var(--accent);
+}
+
+/* 副导航下不再额外填充，仅靠 .mode-switch.is-oj 的描边/文字色暗示 OJ 主题，保持与「2D列表」按钮外观一致 */
 
 .scene-region-label {
   min-width: 136px;
@@ -1464,16 +1633,21 @@ button {
   }
 
   .spatial-stage--2d {
-    height: 230px;
-    min-height: 230px;
+    height: auto;
+    min-height: 240px;
+    padding: 18px 14px 22px;
+    row-gap: 14px;
   }
 
   .spatial-stage--2d .hero-copy {
-    top: 28px;
+    top: auto;
+    left: auto;
+    width: 100%;
+    margin: 0;
   }
 
   .spatial-stage--2d .hero-copy h1 {
-    font-size: 1.8rem;
+    font-size: 1.7rem;
   }
 
   .spatial-stage--2d .hero-copy > p:last-child {
@@ -1481,7 +1655,12 @@ button {
   }
 
   .spatial-stage--2d .region-legend {
-    bottom: 10px;
+    position: static;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    gap: 6px;
   }
 
   .hero-copy {

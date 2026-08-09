@@ -10,6 +10,7 @@ import {
 describe('spatial URL state', () => {
   it('parses valid category and service deep links', () => {
     expect(parseLocation('?category=ecosystem&service=era-git')).toEqual({
+      namespace: 'main',
       category: 'ecosystem',
       service: 'era-git',
     })
@@ -17,6 +18,7 @@ describe('spatial URL state', () => {
 
   it('derives the category from a valid service', () => {
     expect(parseLocation('?service=era-oj')).toEqual({
+      namespace: 'main',
       category: 'team',
       service: 'era-oj',
     })
@@ -24,6 +26,7 @@ describe('spatial URL state', () => {
 
   it('rejects stale and malicious URL state', () => {
     expect(parseLocation('?category=%3Cscript%3E&service=javascript%3Aalert(1)')).toEqual({
+      namespace: 'main',
       category: null,
       service: null,
     })
@@ -33,6 +36,7 @@ describe('spatial URL state', () => {
     'rejects inherited object key %s',
     (service) => {
       expect(parseLocation(`?service=${service}`)).toEqual({
+        namespace: 'main',
         category: null,
         service: null,
       })
@@ -48,10 +52,12 @@ describe('spatial URL state', () => {
 
   it('moves one level up without losing the current region', () => {
     expect(spatialParent({ category: 'products', service: 'era-cloud' })).toEqual({
+      namespace: 'main',
       category: 'products',
       service: null,
     })
     expect(spatialParent({ category: 'products', service: null })).toEqual({
+      namespace: 'main',
       category: null,
       service: null,
     })
