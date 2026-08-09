@@ -80,10 +80,7 @@ test('保留 18 个语义入口并通过基础无障碍审计', async ({ page },
   await expect(page.getByRole('heading', { name: '选择服务，快速访问' })).toBeVisible()
   await expect(page.locator('.brand strong')).toHaveText('E时代社团服务导航')
   const heroLines = page.locator('#hero-title > span')
-  await expect(heroLines.locator('.oj-visually-hidden')).toHaveText([
-    'E时代社团',
-    '服务导航',
-  ])
+  await expect(heroLines).toHaveText(['E时代社团', '服务导航'])
   expect(
     await heroLines.evaluateAll((elements) =>
       elements.every((element) => getComputedStyle(element).whiteSpace === 'nowrap'),
@@ -216,7 +213,7 @@ test('2D 服务区块单击与 Enter 直接安全导航', async ({ page }, testI
         (element) =>
           element.href.startsWith('https://') &&
           element.target === '_blank' &&
-          element.rel === 'noopener noreferrer',
+          element.rel === 'noopener noreferrer nofollow',
       ),
     ),
   ).toBe(true)
@@ -508,7 +505,7 @@ test('搜索打开详情并一次访问且浏览器历史恢复', async ({ page 
     'https://git.emoera.com/explore/repos',
   )
   await expect(visit).toHaveAttribute('target', '_blank')
-  await expect(visit).toHaveAttribute('rel', 'noopener noreferrer')
+  await expect(visit).toHaveAttribute('rel', 'noopener noreferrer nofollow')
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('e-era:recent') || '[]')),
   ).not.toContain('era-git')

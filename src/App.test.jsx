@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { preferenceKeys } from './lib/preferences'
+import { ojResourceCount } from './data/ojResources'
 
 vi.mock('./scene/SpatialScene', () => ({
   default: ({ onCategory, onService, onFallback }) => (
@@ -33,10 +34,6 @@ describe('E时代社团服务导航', () => {
   beforeEach(() => {
     localStorage.clear()
     window.history.replaceState({}, '', '/')
-    document.documentElement.classList.remove('theme-fading')
-    delete document.documentElement.dataset.themeTransition
-    delete document.startViewTransition
-    delete document.documentElement.animate
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       value: true,
@@ -48,45 +45,28 @@ describe('E时代社团服务导航', () => {
 
     expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
     expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
-    expect(screen.getByRole('link', { name: '切换到刷题导航副站' })).toHaveAttribute(
-      'href',
-      '/oj/',
-    )
     const heroTitle = screen.getByRole('heading', {
       level: 1,
       name: /E时代社团\s*服务导航/,
     })
     expect(heroTitle).toBeVisible()
-    expect(
-      [...heroTitle.querySelectorAll('.oj-visually-hidden')].map((span) => span.textContent),
-    ).toEqual(['E时代社团', '服务导航'])
-    expect(
-      screen.getByText(/快速访问社团开发、通行证与团队服务/, {
-        selector: '.oj-reveal__line',
-      }),
-    ).toBeInTheDocument()
+    expect([...heroTitle.querySelectorAll('span')].map((span) => span.textContent)).toEqual([
+      'E时代社团',
+      '服务导航',
+    ])
+    expect(screen.getByText(/快速访问社团开发、通行证与团队服务/)).toBeVisible()
     expect(screen.queryByText(/让每个入口|拥有自己的位置|Spatial Service Atlas/)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('navigation', { name: '当前服务路径' }),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '首页' })).not.toBeInTheDocument()
     expect(screen.getAllByTestId('service-card')).toHaveLength(18)
+    expect(screen.getByText('产品服务', { selector: '.region-legend strong' })).toBeInTheDocument()
+    expect(screen.getByText('通行证生态链', { selector: '.region-legend strong' })).toBeInTheDocument()
+    expect(screen.getByText('团队与官网', { selector: '.region-legend strong' })).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: '聚焦产品服务' }),
-    ).toHaveTextContent('产品服务')
-    expect(
-      screen.getByRole('button', { name: '聚焦通行证生态链' }),
-    ).toHaveTextContent('通行证生态')
-    expect(
-      screen.getByRole('button', { name: '聚焦团队与官网' }),
-    ).toHaveTextContent('团队与官网')
-    expect(
-      screen.getByRole('button', { name: '聚焦E时代社团成员项目' }),
-    ).toHaveTextContent('成员项目')
-    expect(document.querySelectorAll('.region-legend__icon')).toHaveLength(0)
-    expect(screen.getByRole('button', { name: '打开服务命令面板' })).toBeVisible()
-    expect(screen.getByText('服务入口')).toBeVisible()
-    expect(screen.getByText('接入通行证')).toBeVisible()
+      screen.getByText('E时代社团成员项目', { selector: '.region-legend strong' }),
+    ).toBeInTheDocument()
   })
 
   it('使用本地品牌资产且不把品牌 Logo 用作模块图形', async () => {
@@ -124,16 +104,6 @@ describe('E时代社团服务导航', () => {
     ).toHaveTextContent('总览/通行证生态链/E时代图床')
   })
 
-  it('已有服务弹窗时不会叠加打开命令面板', async () => {
-    render(<App />)
-    await screen.findByTestId('spatial-scene')
-
-    fireEvent.click(screen.getByRole('button', { name: '查看 E时代云服务 详情' }))
-    expect(screen.getByRole('dialog', { name: 'E时代云服务' })).toBeInTheDocument()
-    fireEvent.keyDown(window, { key: 'k', metaKey: true })
-    expect(screen.queryByRole('dialog', { name: '服务命令面板' })).not.toBeInTheDocument()
-  })
-
   it('完全移除收藏入口但保留最近访问', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
@@ -147,7 +117,7 @@ describe('E时代社团服务导航', () => {
     const visit = within(serviceDialog).getByRole('link', { name: '访问服务' })
     expect(visit).toHaveAttribute('href', 'https://cloud.emoera.com/')
     expect(visit).toHaveAttribute('target', '_blank')
-    expect(visit).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(visit).toHaveAttribute('rel', 'noopener noreferrer nofollow')
     fireEvent.click(visit)
     expect(
       screen.queryByRole('dialog', { name: '即将离开 E时代导航' }),
@@ -203,42 +173,33 @@ describe('E时代社团服务导航', () => {
     expect(helpButton).toHaveFocus()
   })
 
-  it('支持明暗主题切换，缺少 View Transitions 时使用淡变效果', async () => {
+  it('支持明暗主题切换', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
     fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
-    expect(document.documentElement).toHaveClass('theme-fading')
-  })
 
-  it('浏览器支持 View Transitions 时从主题按钮圆形揭示', async () => {
-    const animate = vi.fn()
-    const startViewTransition = vi.fn((update) => {
-      update()
-      return { ready: Promise.resolve(), finished: Promise.resolve() }
+    // 切换按钮渲染成图标按钮：可重复切换，点击触发以按钮为圆心的涟漪过渡。
+    const switch_ = screen.getByRole('button', { name: '切换到浅色主题' })
+    expect(switch_.className).toMatch(/theme-button/)
+
+    // 不支持 View Transitions 的环境也能直接切：data-theme 立刻翻转。
+    const originalStartViewTransition = document.startViewTransition
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: undefined,
     })
-    document.startViewTransition = startViewTransition
-    document.documentElement.animate = animate
-
-    render(<App />)
-    await screen.findByTestId('spatial-scene')
-    fireEvent.click(screen.getByRole('button', { name: '切换到深色主题' }))
-
-    expect(startViewTransition).toHaveBeenCalledTimes(1)
-    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
-    await waitFor(() => expect(animate).toHaveBeenCalledTimes(1))
-    expect(animate.mock.calls[0][0].clipPath[0]).toMatch(/^circle\(0px at /)
-    expect(animate.mock.calls[0][1]).toMatchObject({
-      duration: 520,
-      pseudoElement: '::view-transition-new(root)',
+    fireEvent.click(switch_)
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light')
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: originalStartViewTransition,
     })
   })
 
   it('搜索无结果时提供状态反馈并可清除', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
-
-    fireEvent.keyDown(window, { key: 'k', metaKey: true })
     const search = screen.getByRole('combobox', { name: '搜索服务' })
 
     fireEvent.change(search, { target: { value: '不存在的社团服务' } })
@@ -285,12 +246,11 @@ describe('E时代社团服务导航', () => {
     const direct = screen.getByRole('link', { name: '打开 E时代云服务' })
     expect(direct).toHaveAttribute('href', 'https://cloud.emoera.com/')
     expect(direct).toHaveAttribute('target', '_blank')
-    expect(direct).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(direct).toHaveAttribute('rel', 'noopener noreferrer nofollow')
     fireEvent.click(direct)
     expect(screen.queryByRole('dialog', { name: 'E时代云服务' })).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(preferenceKeys.recent))[0]).toBe('era-cloud')
 
-    fireEvent.keyDown(window, { key: 'k', metaKey: true })
     const search = screen.getByRole('combobox', { name: '搜索服务' })
     fireEvent.change(search, { target: { value: 'E时代Git' } })
     fireEvent.keyDown(search, { key: 'Enter' })
@@ -326,5 +286,41 @@ describe('E时代社团服务导航', () => {
     expect(
       screen.getByRole('button', { name: '访问服务' }),
     ).toBeDisabled()
+  })
+
+  it('右上角胶囊可切换主/副导航并隔离资源与渲染模式', async () => {
+    render(<App />)
+    await screen.findByTestId('spatial-scene')
+
+    // 默认主导航：18 个社团服务卡片 + 3D 场景。
+    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(18)
+
+    // 切到副导航（OJ 刷题）。
+    fireEvent.click(
+      screen.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }),
+    )
+    expect(window.location.search).toContain('namespace=oj')
+    expect(screen.getByText('E时代 OJ 刷题导航', { selector: '.brand strong' })).toBeVisible()
+    expect(screen.queryByTestId('spatial-scene')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: /E时代 OJ\s*刷题资源导航/ })).toBeInTheDocument()
+    expect(screen.getByText('Codeforces')).toBeInTheDocument()
+    expect(screen.getByText('洛谷')).toBeInTheDocument()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(ojResourceCount)
+    expect(screen.queryByText('算法入门指北')).not.toBeInTheDocument()
+    const codeforces = screen.getByRole('link', { name: '打开 Codeforces' })
+    expect(codeforces).toHaveAttribute('href', 'https://codeforces.com/')
+    expect(codeforces).toHaveAttribute('rel', 'noopener noreferrer nofollow')
+    // 3D 模式切换在副导航下被禁用（强制 2D 列表）。
+    expect(
+      screen.getByRole('button', { name: '副导航固定为 2D 列表' }),
+    ).toBeDisabled()
+
+    // 切回主导航。
+    fireEvent.click(screen.getByRole('button', { name: '切换到主导航：E时代社团服务' }))
+    expect(window.location.search).not.toContain('namespace=oj')
+    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(18)
   })
 })

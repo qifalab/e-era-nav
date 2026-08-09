@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { ICON_DEFINITIONS } from '../icons/originalIconRegistry'
+import { ALL_ICON_DEFINITIONS } from '../icons/originalIconRegistry'
 
 const sharedProps = {
   viewBox: '0 0 24 24',
@@ -12,7 +12,7 @@ const sharedProps = {
 }
 
 export default function ServiceIcon({ name, className }) {
-  const definition = ICON_DEFINITIONS[name]
+  const definition = ALL_ICON_DEFINITIONS[name]
   if (!definition) return null
 
   return (

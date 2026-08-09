@@ -1,6 +1,29 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { ojs } from '../src/oj/OjData'
+import { ojResourceCount } from '../src/data/ojResources'
+
+test('经典主站可切换到内置 OJ 导航且外链保持安全', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }).click()
+
+  await expect(page).toHaveURL(/namespace=oj/)
+  await expect(page.getByTestId('service-card')).toHaveCount(ojResourceCount)
+  await expect(page.locator('a[href*="bilibili.com"]')).toHaveCount(0)
+  const directLinks = page.locator('#service-directory a[data-direct-service]')
+  await expect(directLinks).toHaveCount(ojResourceCount)
+  expect(
+    await directLinks.evaluateAll((links) =>
+      links.every(
+        (link) =>
+          link.target === '_blank' &&
+          ['noopener', 'noreferrer', 'nofollow'].every((token) =>
+            link.relList.contains(token),
+          ),
+      ),
+    ),
+  ).toBe(true)
+})
 
 test('刷题导航可访问、可筛选且没有严重无障碍问题', async ({ page }) => {
   await page.goto('/oj/')
@@ -43,10 +66,9 @@ test('刷题导航可访问、可筛选且没有严重无障碍问题', async ({
   await page.getByRole('link', { name: '返回主站导航' }).click()
   await expect(page.getByRole('button', { name: '返回导航首页' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect(page.getByRole('link', { name: '切换到刷题导航副站' })).toHaveAttribute(
-    'href',
-    '/oj/',
-  )
+  await expect(
+    page.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }),
+  ).toBeVisible()
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
   ).toBeLessThanOrEqual(1)
