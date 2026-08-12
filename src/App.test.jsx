@@ -158,17 +158,26 @@ describe('E时代社团服务导航', () => {
     render(<App />)
 
     expect(
-      screen.queryByRole('dialog', { name: '如何使用服务导航' }),
+      screen.queryByRole('dialog', { name: '服务导航' }),
     ).not.toBeInTheDocument()
-    const helpButton = screen.getByRole('button', { name: '导航操作帮助' })
+    const helpButton = screen.getByRole('button', { name: '公告' })
     helpButton.focus()
     fireEvent.click(helpButton)
-    const dialog = screen.getByRole('dialog', { name: '如何使用服务导航' })
-    expect(within(dialog).getByText('操作说明与快捷键')).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: '服务导航' })
+    const announcementTab = within(dialog).getByRole('tab', { name: '公告' })
+    const guideTab = within(dialog).getByRole('tab', { name: '操作说明与快捷键' })
+    expect(announcementTab).toHaveAttribute('aria-selected', 'true')
+    expect(within(dialog).getByRole('tabpanel', { name: '公告' })).toHaveTextContent(
+      '新同学记得点击链接加入我们在牛客的团队',
+    )
+    fireEvent.keyDown(announcementTab, { key: 'ArrowRight' })
+    expect(guideTab).toHaveAttribute('aria-selected', 'true')
+    expect(guideTab).toHaveFocus()
+    expect(within(dialog).getByRole('tabpanel', { name: '操作说明与快捷键' })).toBeInTheDocument()
     expect(within(dialog).getByText('按分类浏览')).toBeInTheDocument()
     fireEvent.click(within(dialog).getByRole('button', { name: '关闭' }))
     expect(
-      screen.queryByRole('dialog', { name: '如何使用服务导航' }),
+      screen.queryByRole('dialog', { name: '服务导航' }),
     ).not.toBeInTheDocument()
     expect(helpButton).toHaveFocus()
   })
@@ -222,8 +231,13 @@ describe('E时代社团服务导航', () => {
     expect(window.location.search).toBe('')
     fireEvent.keyDown(window, { key: '?', altKey: true })
     expect(
-      screen.getByRole('dialog', { name: '如何使用服务导航' }),
+      screen.getByRole('dialog', { name: '服务导航' }),
     ).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: '服务导航' })
+    expect(
+      within(dialog).getByRole('tab', { name: '操作说明与快捷键' }),
+    ).toHaveAttribute('aria-selected', 'true')
+    expect(within(dialog).getByText('按分类浏览')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
   })
 

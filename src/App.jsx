@@ -3,8 +3,8 @@ import { motion as Motion } from 'framer-motion'
 import {
   Box,
   ChevronRight,
-  CircleHelp,
   Compass,
+  Megaphone,
   Monitor,
   Moon,
   Network,
@@ -24,6 +24,7 @@ import {
   ojServiceBySlug,
   ojServicesByCategory,
 } from './data/ojResources'
+import { ANNOUNCEMENT } from './data/announcement'
 import { categories, categoryBySlug, serviceBySlug, services } from './data/services'
 import { detectCapabilities } from './lib/capabilities'
 import {
@@ -42,7 +43,6 @@ import {
   preferenceKeys,
   setStoredValue,
 } from './lib/preferences'
-
 const SpatialScene = lazy(() => import('./scene/SpatialScene'))
 
 function useMediaQuery(query) {
@@ -108,10 +108,10 @@ function App() {
   const isOjMode = spatialState.namespace === NAMESPACES.OJ
   const [renderMode, setRenderMode] = useState(() => {
     if (initialState.namespace === NAMESPACES.OJ) return '2d'
+    if (compactViewport) return '2d'
     const stored = getStoredValue(preferenceKeys.renderMode)
     if (stored === '2d') return '2d'
     if (stored === '3d' && capabilities.recommendedMode === '3d') return '3d'
-    if (compactViewport) return '2d'
     return capabilities.recommendedMode
   })
   const [modeNotice, setModeNotice] = useState(() =>
@@ -128,10 +128,13 @@ function App() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [activeSearchIndex, setActiveSearchIndex] = useState(0)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [helpTab, setHelpTab] = useState('guide')
   const [online, setOnline] = useState(navigator.onLine)
   const [cameraRevision, setCameraRevision] = useState(0)
   const searchRef = useRef(null)
   const helpTriggerRef = useRef(null)
+  const announcementTabRef = useRef(null)
+  const guideTabRef = useRef(null)
   const themeButtonRef = useRef(null)
   const helpWasOpenedRef = useRef(false)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -149,10 +152,57 @@ function App() {
   const selectedService = activeServiceBySlug[spatialState.service] || null
   const selectedCategory = activeCategoryBySlug[spatialState.category] || null
   const modalOpen = Boolean(selectedService || helpOpen)
-  const openHelp = useCallback(() => {
+  const openInfoPanel = useCallback((tab) => {
     helpWasOpenedRef.current = true
+    setHelpTab(tab)
     setHelpOpen(true)
   }, [])
+
+  const handleHelpTabKeyDown = (event) => {
+    let nextTab
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextTab = helpTab === 'announcement' ? 'guide' : 'announcement'
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextTab = helpTab === 'guide' ? 'announcement' : 'guide'
+    } else if (event.key === 'Home') {
+      nextTab = 'announcement'
+    } else if (event.key === 'End') {
+      nextTab = 'guide'
+    } else {
+      return
+    }
+
+    event.preventDefault()
+    setHelpTab(nextTab)
+    const nextRef = nextTab === 'announcement' ? announcementTabRef : guideTabRef
+    nextRef.current?.focus()
+  }
+
+  const renderAnnouncement = (text) => {
+    const urlPattern = /(https?:\/\/[^\s，。、！？]+)/g
+    return text.split('\n').map((line, lineIndex) => {
+      const nodes = []
+      let last = 0
+      let match
+      urlPattern.lastIndex = 0
+      while ((match = urlPattern.exec(line)) !== null) {
+        if (match.index > last) nodes.push(line.slice(last, match.index))
+        nodes.push(
+          <a
+            key={`${lineIndex}-${match.index}`}
+            href={match[0]}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {match[0]}
+          </a>,
+        )
+        last = match.index + match[0].length
+      }
+      if (last < line.length) nodes.push(line.slice(last))
+      return <p key={lineIndex}>{nodes}</p>
+    })
+  }
 
   const searchResults = useMemo(() => {
     const needle = normalize(query)
@@ -350,7 +400,7 @@ function App() {
       } else if (event.altKey && event.key.toLowerCase() === 'b') {
         goBack()
       } else if (event.altKey && event.key === '?') {
-        openHelp()
+        openInfoPanel('guide')
       } else if (event.altKey && event.key.toLowerCase() === 'o') {
         toggleNamespace()
       } else if (
@@ -380,7 +430,7 @@ function App() {
     goHome,
     isOjMode,
     modalOpen,
-    openHelp,
+    openInfoPanel,
     toggleNamespace,
   ])
 
@@ -584,7 +634,7 @@ function App() {
           </button>
           <button
             type="button"
-            className="mode-switch"
+            className="mode-switch mode-switch--render"
             onClick={switchRenderMode}
             disabled={isOjMode}
             aria-label={
@@ -615,10 +665,10 @@ function App() {
             ref={helpTriggerRef}
             type="button"
             className="icon-button help-button"
-            onClick={openHelp}
-            aria-label="导航操作帮助"
+            onClick={() => openInfoPanel('announcement')}
+            aria-label="公告"
           >
-            <CircleHelp aria-hidden="true" />
+            <Megaphone aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -878,61 +928,114 @@ function App() {
         )}
       </Modal>
 
-      <Modal open={helpOpen} title="如何使用服务导航" eyebrow="操作说明与快捷键" onClose={closeHelp}>
-        <div className="help-grid">
-          <div>
-            <span>01</span>
-            <strong>按分类浏览</strong>
-            <p>
-              {isOjMode
-                ? '按信息门户、基础学习、刷题训练、竞赛资源、软件工具查看 XCPC 站群。'
-                : '按成员项目、产品服务、通行证生态链、团队与官网查看社团入口。'}
-            </p>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>搜索资源</strong>
-            <p>
-              {isOjMode
-                ? '输入刷题站名称或简介，直接跳到对应的 OJ 资源。'
-                : '输入服务名称或说明，直接找到对应的社团服务卡片。'}
-            </p>
-          </div>
-          <div>
-            <span>03</span>
-            <strong>切换主/副导航</strong>
-            <p>右上角胶囊可一键在 E时代服务导航与 OJ 刷题导航间切换。</p>
-          </div>
+      <Modal open={helpOpen} title="服务导航" onClose={closeHelp}>
+        <div
+          className="panel-tabs"
+          role="tablist"
+          aria-label="面板切换"
+          onKeyDown={handleHelpTabKeyDown}
+        >
+          <button
+            ref={announcementTabRef}
+            id="service-panel-tab-announcement"
+            type="button"
+            role="tab"
+            aria-selected={helpTab === 'announcement'}
+            aria-controls="service-panel-announcement"
+            tabIndex={helpTab === 'announcement' ? 0 : -1}
+            className={`panel-tab${helpTab === 'announcement' ? ' is-active' : ''}`}
+            onClick={() => setHelpTab('announcement')}
+          >
+            公告
+          </button>
+          <button
+            ref={guideTabRef}
+            id="service-panel-tab-guide"
+            type="button"
+            role="tab"
+            aria-selected={helpTab === 'guide'}
+            aria-controls="service-panel-guide"
+            tabIndex={helpTab === 'guide' ? 0 : -1}
+            className={`panel-tab${helpTab === 'guide' ? ' is-active' : ''}`}
+            onClick={() => setHelpTab('guide')}
+          >
+            操作说明与快捷键
+          </button>
         </div>
-        <dl className="shortcut-list">
-          <div>
-            <dt>⌘/Ctrl K</dt>
-            <dd>搜索</dd>
+
+        {helpTab === 'guide' ? (
+          <div
+            id="service-panel-guide"
+            role="tabpanel"
+            aria-labelledby="service-panel-tab-guide"
+          >
+            <div className="help-grid">
+              <div>
+                <span>01</span>
+                <strong>按分类浏览</strong>
+                <p>
+                  {isOjMode
+                    ? '按信息门户、基础学习、刷题训练、竞赛资源、软件工具查看 XCPC 站群。'
+                    : '按成员项目、产品服务、通行证生态链、团队与官网查看社团入口。'}
+                </p>
+              </div>
+              <div>
+                <span>02</span>
+                <strong>搜索资源</strong>
+                <p>
+                  {isOjMode
+                    ? '输入刷题站名称或简介，直接跳到对应的 OJ 资源。'
+                    : '输入服务名称或说明，直接找到对应的社团服务卡片。'}
+                </p>
+              </div>
+              <div>
+                <span>03</span>
+                <strong>切换主/副导航</strong>
+                <p>右上角胶囊可一键在 E时代服务导航与 OJ 刷题导航间切换。</p>
+              </div>
+            </div>
+            <dl className="shortcut-list">
+              <div>
+                <dt>⌘/Ctrl K</dt>
+                <dd>搜索</dd>
+              </div>
+              <div>
+                <dt>Alt H</dt>
+                <dd>回到总览</dd>
+              </div>
+              <div>
+                <dt>Alt B</dt>
+                <dd>返回上一级</dd>
+              </div>
+              <div>
+                <dt>Alt O</dt>
+                <dd>切换主/副导航</dd>
+              </div>
+              <div>
+                <dt>Alt 1–{isOjMode ? '5' : '4'}</dt>
+                <dd>聚焦区域</dd>
+              </div>
+              <div>
+                <dt>Alt ?</dt>
+                <dd>帮助</dd>
+              </div>
+            </dl>
+            <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
+              开始使用
+            </button>
           </div>
-          <div>
-            <dt>Alt H</dt>
-            <dd>回到总览</dd>
+        ) : (
+          <div
+            id="service-panel-announcement"
+            role="tabpanel"
+            aria-labelledby="service-panel-tab-announcement"
+          >
+            <div className="announcement-body">{renderAnnouncement(ANNOUNCEMENT)}</div>
+            <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
+              知道了
+            </button>
           </div>
-          <div>
-            <dt>Alt B</dt>
-            <dd>返回上一级</dd>
-          </div>
-          <div>
-            <dt>Alt O</dt>
-            <dd>切换主/副导航</dd>
-          </div>
-          <div>
-            <dt>Alt 1–{isOjMode ? '5' : '4'}</dt>
-            <dd>聚焦区域</dd>
-          </div>
-          <div>
-            <dt>Alt ?</dt>
-            <dd>帮助</dd>
-          </div>
-        </dl>
-        <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
-          开始使用
-        </button>
+        )}
       </Modal>
     </div>
   )

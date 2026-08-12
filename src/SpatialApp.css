@@ -1348,6 +1348,59 @@ button {
   letter-spacing: -0.03em;
 }
 
+.panel-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 18px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.panel-tab {
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 140ms var(--ease), color 140ms var(--ease);
+}
+
+.panel-tab:hover {
+  color: var(--ink);
+}
+
+.panel-tab.is-active {
+  background: var(--surface-solid);
+  color: var(--ink);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.announcement-body {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.announcement-body p {
+  margin: 0 0 10px;
+}
+
+.announcement-body a {
+  color: var(--accent, #185fa5);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
 .service-detail {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -1571,15 +1624,12 @@ button {
     min-width: 44px;
   }
 
-  .brand__copy,
-  .mode-switch span {
+  .brand__copy {
     display: none;
   }
 
-  .mode-switch {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
+  .mode-switch--render {
+    display: none;
   }
 
   .mobile-search-trigger {
@@ -1623,8 +1673,7 @@ button {
     width: 100%;
   }
 
-  .search-shortcut,
-  .theme-button {
+  .search-shortcut {
     display: none;
   }
 
@@ -1776,10 +1825,6 @@ button {
   .command-actions .help-button {
     display: inline-flex;
     width: 44px;
-  }
-
-  .command-actions .theme-button {
-    display: none;
   }
 
   .hero-copy h1 {
