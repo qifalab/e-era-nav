@@ -158,6 +158,7 @@ test('品牌 Logo 本地加载且 18 项使用原版 icon 映射', async ({ page
   )
 
   const expectedIcons = [
+    'book',
     'lock',
     'code',
     'cloud',
@@ -175,7 +176,6 @@ test('品牌 Logo 本地加载且 18 项使用原版 icon 映射', async ({ page
     'bulb',
     'terminal',
     'flask',
-    'book',
   ]
   const cards = page.getByTestId('service-card')
   await expect(cards).toHaveCount(18)
@@ -213,7 +213,7 @@ test('2D 服务区块单击与 Enter 直接安全导航', async ({ page }, testI
         (element) =>
           element.href.startsWith('https://') &&
           element.target === '_blank' &&
-          element.rel === 'noopener noreferrer',
+          element.rel === 'noopener noreferrer nofollow',
       ),
     ),
   ).toBe(true)
@@ -505,7 +505,7 @@ test('搜索打开详情并一次访问且浏览器历史恢复', async ({ page 
     'https://git.emoera.com/explore/repos',
   )
   await expect(visit).toHaveAttribute('target', '_blank')
-  await expect(visit).toHaveAttribute('rel', 'noopener noreferrer')
+  await expect(visit).toHaveAttribute('rel', 'noopener noreferrer nofollow')
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('e-era:recent') || '[]')),
   ).not.toContain('era-git')

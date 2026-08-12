@@ -16,7 +16,7 @@ describe('OJ 副导航资源目录', () => {
     expect(ojServices).toHaveLength(ojResourceCount)
     expect(
       ojCategories.map((category) => ojServicesByCategory[category.slug].length),
-    ).toEqual([1, 4, 6, 6, 3])
+    ).toEqual([1, 3, 6, 6, 3])
     const total = ojCategories.reduce(
       (sum, category) => sum + ojServicesByCategory[category.slug].length,
       0,
@@ -43,6 +43,7 @@ describe('OJ 副导航资源目录', () => {
       expect(ALL_ICON_DEFINITIONS[service.icon]).toBeDefined()
     })
     expect(Object.keys(OJ_ICON_REGISTRY)).toHaveLength(ojResourceCount)
+    expect(ojServices.some((service) => service.url.includes('bilibili.com'))).toBe(false)
   })
 
   it('外链白名单能识别副导航目标地址', () => {

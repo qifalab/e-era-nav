@@ -117,7 +117,7 @@ describe('E时代社团服务导航', () => {
     const visit = within(serviceDialog).getByRole('link', { name: '访问服务' })
     expect(visit).toHaveAttribute('href', 'https://cloud.emoera.com/')
     expect(visit).toHaveAttribute('target', '_blank')
-    expect(visit).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(visit).toHaveAttribute('rel', 'noopener noreferrer nofollow')
     fireEvent.click(visit)
     expect(
       screen.queryByRole('dialog', { name: '即将离开 E时代导航' }),
@@ -248,7 +248,7 @@ describe('E时代社团服务导航', () => {
     const direct = screen.getByRole('link', { name: '打开 E时代云服务' })
     expect(direct).toHaveAttribute('href', 'https://cloud.emoera.com/')
     expect(direct).toHaveAttribute('target', '_blank')
-    expect(direct).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(direct).toHaveAttribute('rel', 'noopener noreferrer nofollow')
     fireEvent.click(direct)
     expect(screen.queryByRole('dialog', { name: 'E时代云服务' })).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(preferenceKeys.recent))[0]).toBe('era-cloud')
@@ -309,6 +309,10 @@ describe('E时代社团服务导航', () => {
     expect(screen.getByText('Codeforces')).toBeInTheDocument()
     expect(screen.getByText('洛谷')).toBeInTheDocument()
     expect(screen.getAllByTestId('service-card')).toHaveLength(ojResourceCount)
+    expect(screen.queryByText('算法入门指北')).not.toBeInTheDocument()
+    const codeforces = screen.getByRole('link', { name: '打开 Codeforces' })
+    expect(codeforces).toHaveAttribute('href', 'https://codeforces.com/')
+    expect(codeforces).toHaveAttribute('rel', 'noopener noreferrer nofollow')
     // 3D 模式切换在副导航下被禁用（强制 2D 列表）。
     expect(
       screen.getByRole('button', { name: '副导航固定为 2D 列表' }),

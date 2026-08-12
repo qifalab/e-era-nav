@@ -393,7 +393,9 @@ button {
 
 .icon-button,
 .mode-switch {
+  min-width: 44px;
   min-height: 44px;
+  flex: 0 0 auto;
   border: 1px solid transparent;
   border-radius: 11px;
   background: transparent;
@@ -1547,6 +1549,17 @@ button {
 }
 
 @media (max-width: 1100px) {
+  .mode-switch {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .mode-switch span,
+  .brand__copy {
+    display: none;
+  }
+
   .breadcrumbs--desktop {
     display: none;
   }

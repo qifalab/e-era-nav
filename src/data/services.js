@@ -49,6 +49,8 @@ export const services = [
     description: '统一身份认证与安全管理平台',
     url: 'https://account.emoera.com/',
     icon: 'lock',
+    tags: ['身份认证', '账号', '基础服务'],
+    badge: 'core',
     position: [-6.4, 0.75, 6.4],
   },
   {
@@ -58,6 +60,8 @@ export const services = [
     description: '高效智能的云端开发环境',
     url: 'https://ide.emoera.com/',
     icon: 'code',
+    tags: ['云端开发', '开发工具'],
+    badge: 'core',
     position: [-6.4, 0.75, 8.8],
   },
   {
@@ -67,6 +71,7 @@ export const services = [
     description: '高性能云端数据存储与计算',
     url: 'https://cloud.emoera.com/',
     icon: 'cloud',
+    tags: ['存储', '计算', '云服务'],
     position: [-6.4, 0.75, 4],
   },
   {
@@ -76,6 +81,7 @@ export const services = [
     description: '安全可信的认证体系，为您的数字信息保驾护航',
     url: 'https://trust.emoera.com/',
     icon: 'shield',
+    tags: ['安全', '认证'],
     position: [-8.8, 0.75, 6.4],
   },
   {
@@ -85,6 +91,7 @@ export const services = [
     description: '智能随机抽取与活动管理系统',
     url: 'https://choujiang.emoera.com/',
     icon: 'globe',
+    tags: ['活动', '随机抽取'],
     position: [-4, 0.75, 6.4],
   },
   {
@@ -94,6 +101,7 @@ export const services = [
     description: '社团内部的身份卡系统',
     url: 'https://neweid.emoera.com/',
     icon: 'id-card',
+    tags: ['数字身份', '成员服务'],
     position: [-8.8, 0.75, 8.8],
   },
   {
@@ -103,6 +111,8 @@ export const services = [
     description: '快速分享，支持代码/文件分享与权限控制，让分享更简单',
     url: 'https://code.emoera.cn/',
     icon: 'clipboard',
+    tags: ['临时分享', '代码片段', '协作'],
+    badge: 'passport',
     position: [6.4, 0.75, 8.8],
   },
   {
@@ -112,6 +122,8 @@ export const services = [
     description: '便捷的竞赛活动报名与管理平台',
     url: 'https://acm.emoera.cn/',
     icon: 'check-orbit',
+    tags: ['竞赛报名', '活动管理'],
+    badge: 'passport',
     position: [6.4, 0.75, 6.4],
   },
   {
@@ -121,6 +133,8 @@ export const services = [
     description: '高效稳定的图片托管服务，快速上传与分享',
     url: 'https://image.emoera.cn/',
     icon: 'image',
+    tags: ['图片托管', '分享'],
+    badge: 'passport',
     position: [6.4, 0.75, 4],
   },
   {
@@ -130,6 +144,8 @@ export const services = [
     description: '技术交流与知识分享的社区平台',
     url: 'https://ideawit.com/',
     icon: 'message',
+    tags: ['社区', '知识分享'],
+    badge: 'passport',
     position: [4, 0.75, 6.4],
   },
   {
@@ -139,6 +155,8 @@ export const services = [
     description: '代码托管与协作平台',
     url: 'https://git.emoera.com/explore/repos',
     icon: 'git',
+    tags: ['代码仓库', '版本控制', '协作'],
+    badge: 'passport',
     position: [8.8, 0.75, 6.4],
   },
   {
@@ -148,6 +166,7 @@ export const services = [
     description: 'E时代ACM算法竞赛团队介绍与成员展示',
     url: 'https://acm.emoera.com/',
     icon: 'monitor',
+    tags: ['算法竞赛', '团队'],
     position: [6.4, 0.75, -6.4],
   },
   {
@@ -157,6 +176,7 @@ export const services = [
     description: '全校最强编程类社团的团队展示页面',
     url: 'https://we.emoera.com/',
     icon: 'users',
+    tags: ['官网', '社团'],
     position: [4, 0.75, -6.4],
   },
   {
@@ -166,6 +186,7 @@ export const services = [
     description: 'E时代开发者平台与资源入口',
     url: 'https://developer.emoera.com/',
     icon: 'globe',
+    tags: ['开发者', '资源入口'],
     position: [8.8, 0.75, -6.4],
   },
   {
@@ -175,6 +196,7 @@ export const services = [
     description: '前沿技术与算法研究，推动技术创新升级',
     url: 'https://home.miaojilab.cn/',
     icon: 'bulb',
+    tags: ['实验室', '技术研究'],
     position: [6.4, 0.75, -4],
   },
   {
@@ -184,6 +206,7 @@ export const services = [
     description: '在线编程练习平台，提升算法与编程能力',
     url: 'https://oj.emoera.com/',
     icon: 'terminal',
+    tags: ['在线评测', '算法'],
     position: [6.4, 0.75, -8.8],
   },
   {
@@ -193,6 +216,7 @@ export const services = [
     description: 'E时代研发中心，专注企业级解决方案',
     url: 'https://www.qifalab.cn/qifalab-v1/',
     icon: 'flask',
+    tags: ['研发', '解决方案'],
     position: [8.8, 0.75, -8.8],
   },
   {
@@ -202,9 +226,15 @@ export const services = [
     description: '个人知识管理与笔记分享平台',
     url: 'https://www.duya.website/',
     icon: 'book',
+    tags: ['笔记', '知识管理'],
     position: [-6.4, 0.75, -6.4],
   },
 ]
+
+export const badgeLabels = {
+  core: '核心服务',
+  passport: '已接入通行证',
+}
 
 function createSafeRecord(entries) {
   const record = Object.create(null)
@@ -231,3 +261,31 @@ export const overviewCamera = {
   position: [0, 14, 20],
   target: [0, 0, 0],
 }
+
+export const siteStats = {
+  services: services.length,
+  categories: categories.length,
+  passport: services.filter((service) => service.badge === 'passport').length,
+  domains: new Set(services.map((service) => new URL(service.url).hostname)).size,
+}
+
+export const onboardingSteps = [
+  {
+    step: '01',
+    slug: 'era-passport',
+    title: '开通通行证',
+    detail: '用于登录已接入通行证的服务，先在通行证中心完成注册。',
+  },
+  {
+    step: '02',
+    slug: 'era-ide',
+    title: '打开云端 IDE',
+    detail: '在浏览器中进入社团云端开发环境，开始编写和保存代码。',
+  },
+  {
+    step: '03',
+    slug: 'era-git',
+    title: '提交你的项目',
+    detail: '通过社团 Git 管理代码，并按项目展示要求提交作品信息。',
+  },
+]

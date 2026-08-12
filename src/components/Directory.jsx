@@ -8,7 +8,15 @@ import {
 import { isSafeExternalUrl } from '../lib/navigation'
 import ServiceCardFace from './ServiceCardFace'
 
-function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisit }) {
+function ServiceCard({
+  service,
+  namespace,
+  recent,
+  selected,
+  direct,
+  onSelect,
+  onDirectVisit,
+}) {
   const content = <ServiceCardFace service={service} />
   return (
     <article
@@ -18,12 +26,12 @@ function ServiceCard({ service, recent, selected, direct, onSelect, onDirectVisi
       data-testid="service-card"
       data-service={service.slug}
     >
-      {direct && isSafeExternalUrl(service.url) ? (
+      {direct && isSafeExternalUrl(service.url, namespace) ? (
         <a
           className="service-card__main"
           href={service.url}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener noreferrer nofollow"
           data-direct-service={service.slug}
           onClick={() => onDirectVisit(service.slug)}
           onAuxClick={() => onDirectVisit(service.slug)}
@@ -132,6 +140,7 @@ export default function Directory({
                   <ServiceCard
                     key={service.slug}
                     service={service}
+                    namespace={namespace}
                     recent={recent.includes(service.slug)}
                     selected={spatialState?.service === service.slug}
                     direct={direct}

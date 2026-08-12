@@ -31,13 +31,6 @@ export const OJ_ICON_DEFINITIONS = {
       element('path', { d: 'M7 5h6a4 4 0 0 1 4 4v6' }),
     ],
   },
-  video: {
-    label: '视频',
-    elements: [
-      element('rect', { x: 2, y: 6, width: 14, height: 12, rx: 2 }),
-      element('path', { d: 'M22 8l-6 4 6 4z' }),
-    ],
-  },
   trophy: {
     label: '奖杯',
     elements: [
@@ -155,13 +148,12 @@ Object.values(OJ_ICON_DEFINITIONS).forEach((definition) => {
 })
 Object.freeze(OJ_ICON_DEFINITIONS)
 
-// 副导航 20 个 OJ/刷题资源 → 共享几何色板
+// 副导航 OJ/刷题资源 → 共享几何色板
 export const OJ_ICON_REGISTRY = {
   'emoera-portal': { originalIcon: 'globe', geometry: { source: 'globe', color: '#4f8fc9' } },
   'oi-wiki': { originalIcon: 'book-open', geometry: { source: 'book-open', color: '#256a64' } },
   acwing: { originalIcon: 'graduation', geometry: { source: 'graduation', color: '#b77b2f' } },
   'nowcoder-tracker': { originalIcon: 'route', geometry: { source: 'route', color: '#2f7f78' } },
-  'bilibili-guide': { originalIcon: 'video', geometry: { source: 'video', color: '#fb7299' } },
   codeforces: { originalIcon: 'trophy', geometry: { source: 'trophy', color: '#ef4444' } },
   luogu: { originalIcon: 'fire', geometry: { source: 'fire', color: '#e76f51' } },
   'nowcoder-practice': { originalIcon: 'play', geometry: { source: 'play', color: '#22c55e' } },

@@ -92,15 +92,6 @@ export const ojServices = [
     icon: 'route',
     position: [-6.4, 0.75, 8.8],
   },
-  {
-    slug: 'bilibili-guide',
-    category: 'oj-basics',
-    name: '算法入门指北',
-    description: '推荐一个学习方向的 B 站 UP 主，帮你捋清入门思路',
-    url: 'https://space.bilibili.com/182121317',
-    icon: 'video',
-    position: [-4, 0.75, 6.4],
-  },
   // 刷题训练 ----------------------------------------------------------
   {
     slug: 'codeforces',
