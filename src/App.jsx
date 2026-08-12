@@ -24,6 +24,7 @@ import {
   ojServiceBySlug,
   ojServicesByCategory,
 } from './data/ojResources'
+import { ANNOUNCEMENT } from './data/announcement'
 import { categories, categoryBySlug, serviceBySlug, services } from './data/services'
 import { detectCapabilities } from './lib/capabilities'
 import {
@@ -42,8 +43,6 @@ import {
   preferenceKeys,
   setStoredValue,
 } from './lib/preferences'
-import { loadAnnouncement } from './lib/announcementSource'
-
 const SpatialScene = lazy(() => import('./scene/SpatialScene'))
 
 function useMediaQuery(query) {
@@ -130,11 +129,12 @@ function App() {
   const [activeSearchIndex, setActiveSearchIndex] = useState(0)
   const [helpOpen, setHelpOpen] = useState(false)
   const [helpTab, setHelpTab] = useState('guide')
-  const [announcement] = useState(() => loadAnnouncement())
   const [online, setOnline] = useState(navigator.onLine)
   const [cameraRevision, setCameraRevision] = useState(0)
   const searchRef = useRef(null)
   const helpTriggerRef = useRef(null)
+  const announcementTabRef = useRef(null)
+  const guideTabRef = useRef(null)
   const themeButtonRef = useRef(null)
   const helpWasOpenedRef = useRef(false)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -152,11 +152,31 @@ function App() {
   const selectedService = activeServiceBySlug[spatialState.service] || null
   const selectedCategory = activeCategoryBySlug[spatialState.category] || null
   const modalOpen = Boolean(selectedService || helpOpen)
-  const openHelp = useCallback(() => {
+  const openInfoPanel = useCallback((tab) => {
     helpWasOpenedRef.current = true
-    setHelpTab('announcement')
+    setHelpTab(tab)
     setHelpOpen(true)
   }, [])
+
+  const handleHelpTabKeyDown = (event) => {
+    let nextTab
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextTab = helpTab === 'announcement' ? 'guide' : 'announcement'
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextTab = helpTab === 'guide' ? 'announcement' : 'guide'
+    } else if (event.key === 'Home') {
+      nextTab = 'announcement'
+    } else if (event.key === 'End') {
+      nextTab = 'guide'
+    } else {
+      return
+    }
+
+    event.preventDefault()
+    setHelpTab(nextTab)
+    const nextRef = nextTab === 'announcement' ? announcementTabRef : guideTabRef
+    nextRef.current?.focus()
+  }
 
   const renderAnnouncement = (text) => {
     const urlPattern = /(https?:\/\/[^\s，。、！？]+)/g
@@ -380,7 +400,7 @@ function App() {
       } else if (event.altKey && event.key.toLowerCase() === 'b') {
         goBack()
       } else if (event.altKey && event.key === '?') {
-        openHelp()
+        openInfoPanel('guide')
       } else if (event.altKey && event.key.toLowerCase() === 'o') {
         toggleNamespace()
       } else if (
@@ -410,7 +430,7 @@ function App() {
     goHome,
     isOjMode,
     modalOpen,
-    openHelp,
+    openInfoPanel,
     toggleNamespace,
   ])
 
@@ -645,7 +665,7 @@ function App() {
             ref={helpTriggerRef}
             type="button"
             className="icon-button help-button"
-            onClick={openHelp}
+            onClick={() => openInfoPanel('announcement')}
             aria-label="公告"
           >
             <Megaphone aria-hidden="true" />
@@ -909,20 +929,33 @@ function App() {
       </Modal>
 
       <Modal open={helpOpen} title="服务导航" onClose={closeHelp}>
-        <div className="panel-tabs" role="tablist" aria-label="面板切换">
+        <div
+          className="panel-tabs"
+          role="tablist"
+          aria-label="面板切换"
+          onKeyDown={handleHelpTabKeyDown}
+        >
           <button
+            ref={announcementTabRef}
+            id="service-panel-tab-announcement"
             type="button"
             role="tab"
             aria-selected={helpTab === 'announcement'}
+            aria-controls="service-panel-announcement"
+            tabIndex={helpTab === 'announcement' ? 0 : -1}
             className={`panel-tab${helpTab === 'announcement' ? ' is-active' : ''}`}
             onClick={() => setHelpTab('announcement')}
           >
             公告
           </button>
           <button
+            ref={guideTabRef}
+            id="service-panel-tab-guide"
             type="button"
             role="tab"
             aria-selected={helpTab === 'guide'}
+            aria-controls="service-panel-guide"
+            tabIndex={helpTab === 'guide' ? 0 : -1}
             className={`panel-tab${helpTab === 'guide' ? ' is-active' : ''}`}
             onClick={() => setHelpTab('guide')}
           >
@@ -931,7 +964,11 @@ function App() {
         </div>
 
         {helpTab === 'guide' ? (
-          <>
+          <div
+            id="service-panel-guide"
+            role="tabpanel"
+            aria-labelledby="service-panel-tab-guide"
+          >
             <div className="help-grid">
               <div>
                 <span>01</span>
@@ -986,14 +1023,18 @@ function App() {
             <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
               开始使用
             </button>
-          </>
+          </div>
         ) : (
-          <>
-            <div className="announcement-body">{renderAnnouncement(announcement)}</div>
+          <div
+            id="service-panel-announcement"
+            role="tabpanel"
+            aria-labelledby="service-panel-tab-announcement"
+          >
+            <div className="announcement-body">{renderAnnouncement(ANNOUNCEMENT)}</div>
             <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
               知道了
             </button>
-          </>
+          </div>
         )}
       </Modal>
     </div>
