@@ -3,8 +3,8 @@ import { motion as Motion } from 'framer-motion'
 import {
   Box,
   ChevronRight,
-  CircleHelp,
   Compass,
+  Megaphone,
   Monitor,
   Moon,
   Network,
@@ -42,6 +42,7 @@ import {
   preferenceKeys,
   setStoredValue,
 } from './lib/preferences'
+import { loadAnnouncement } from './lib/announcementSource'
 
 const SpatialScene = lazy(() => import('./scene/SpatialScene'))
 
@@ -108,10 +109,10 @@ function App() {
   const isOjMode = spatialState.namespace === NAMESPACES.OJ
   const [renderMode, setRenderMode] = useState(() => {
     if (initialState.namespace === NAMESPACES.OJ) return '2d'
+    if (compactViewport) return '2d'
     const stored = getStoredValue(preferenceKeys.renderMode)
     if (stored === '2d') return '2d'
     if (stored === '3d' && capabilities.recommendedMode === '3d') return '3d'
-    if (compactViewport) return '2d'
     return capabilities.recommendedMode
   })
   const [modeNotice, setModeNotice] = useState(() =>
@@ -128,6 +129,8 @@ function App() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [activeSearchIndex, setActiveSearchIndex] = useState(0)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [helpTab, setHelpTab] = useState('guide')
+  const [announcement] = useState(() => loadAnnouncement())
   const [online, setOnline] = useState(navigator.onLine)
   const [cameraRevision, setCameraRevision] = useState(0)
   const searchRef = useRef(null)
@@ -151,8 +154,35 @@ function App() {
   const modalOpen = Boolean(selectedService || helpOpen)
   const openHelp = useCallback(() => {
     helpWasOpenedRef.current = true
+    setHelpTab('announcement')
     setHelpOpen(true)
   }, [])
+
+  const renderAnnouncement = (text) => {
+    const urlPattern = /(https?:\/\/[^\s，。、！？]+)/g
+    return text.split('\n').map((line, lineIndex) => {
+      const nodes = []
+      let last = 0
+      let match
+      urlPattern.lastIndex = 0
+      while ((match = urlPattern.exec(line)) !== null) {
+        if (match.index > last) nodes.push(line.slice(last, match.index))
+        nodes.push(
+          <a
+            key={`${lineIndex}-${match.index}`}
+            href={match[0]}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {match[0]}
+          </a>,
+        )
+        last = match.index + match[0].length
+      }
+      if (last < line.length) nodes.push(line.slice(last))
+      return <p key={lineIndex}>{nodes}</p>
+    })
+  }
 
   const searchResults = useMemo(() => {
     const needle = normalize(query)
@@ -584,7 +614,7 @@ function App() {
           </button>
           <button
             type="button"
-            className="mode-switch"
+            className="mode-switch mode-switch--render"
             onClick={switchRenderMode}
             disabled={isOjMode}
             aria-label={
@@ -616,9 +646,9 @@ function App() {
             type="button"
             className="icon-button help-button"
             onClick={openHelp}
-            aria-label="导航操作帮助"
+            aria-label="公告"
           >
-            <CircleHelp aria-hidden="true" />
+            <Megaphone aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -878,61 +908,93 @@ function App() {
         )}
       </Modal>
 
-      <Modal open={helpOpen} title="如何使用服务导航" eyebrow="操作说明与快捷键" onClose={closeHelp}>
-        <div className="help-grid">
-          <div>
-            <span>01</span>
-            <strong>按分类浏览</strong>
-            <p>
-              {isOjMode
-                ? '按信息门户、基础学习、刷题训练、竞赛资源、软件工具查看 XCPC 站群。'
-                : '按成员项目、产品服务、通行证生态链、团队与官网查看社团入口。'}
-            </p>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>搜索资源</strong>
-            <p>
-              {isOjMode
-                ? '输入刷题站名称或简介，直接跳到对应的 OJ 资源。'
-                : '输入服务名称或说明，直接找到对应的社团服务卡片。'}
-            </p>
-          </div>
-          <div>
-            <span>03</span>
-            <strong>切换主/副导航</strong>
-            <p>右上角胶囊可一键在 E时代服务导航与 OJ 刷题导航间切换。</p>
-          </div>
+      <Modal open={helpOpen} title="服务导航" onClose={closeHelp}>
+        <div className="panel-tabs" role="tablist" aria-label="面板切换">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={helpTab === 'announcement'}
+            className={`panel-tab${helpTab === 'announcement' ? ' is-active' : ''}`}
+            onClick={() => setHelpTab('announcement')}
+          >
+            公告
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={helpTab === 'guide'}
+            className={`panel-tab${helpTab === 'guide' ? ' is-active' : ''}`}
+            onClick={() => setHelpTab('guide')}
+          >
+            操作说明与快捷键
+          </button>
         </div>
-        <dl className="shortcut-list">
-          <div>
-            <dt>⌘/Ctrl K</dt>
-            <dd>搜索</dd>
-          </div>
-          <div>
-            <dt>Alt H</dt>
-            <dd>回到总览</dd>
-          </div>
-          <div>
-            <dt>Alt B</dt>
-            <dd>返回上一级</dd>
-          </div>
-          <div>
-            <dt>Alt O</dt>
-            <dd>切换主/副导航</dd>
-          </div>
-          <div>
-            <dt>Alt 1–{isOjMode ? '5' : '4'}</dt>
-            <dd>聚焦区域</dd>
-          </div>
-          <div>
-            <dt>Alt ?</dt>
-            <dd>帮助</dd>
-          </div>
-        </dl>
-        <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
-          开始使用
-        </button>
+
+        {helpTab === 'guide' ? (
+          <>
+            <div className="help-grid">
+              <div>
+                <span>01</span>
+                <strong>按分类浏览</strong>
+                <p>
+                  {isOjMode
+                    ? '按信息门户、基础学习、刷题训练、竞赛资源、软件工具查看 XCPC 站群。'
+                    : '按成员项目、产品服务、通行证生态链、团队与官网查看社团入口。'}
+                </p>
+              </div>
+              <div>
+                <span>02</span>
+                <strong>搜索资源</strong>
+                <p>
+                  {isOjMode
+                    ? '输入刷题站名称或简介，直接跳到对应的 OJ 资源。'
+                    : '输入服务名称或说明，直接找到对应的社团服务卡片。'}
+                </p>
+              </div>
+              <div>
+                <span>03</span>
+                <strong>切换主/副导航</strong>
+                <p>右上角胶囊可一键在 E时代服务导航与 OJ 刷题导航间切换。</p>
+              </div>
+            </div>
+            <dl className="shortcut-list">
+              <div>
+                <dt>⌘/Ctrl K</dt>
+                <dd>搜索</dd>
+              </div>
+              <div>
+                <dt>Alt H</dt>
+                <dd>回到总览</dd>
+              </div>
+              <div>
+                <dt>Alt B</dt>
+                <dd>返回上一级</dd>
+              </div>
+              <div>
+                <dt>Alt O</dt>
+                <dd>切换主/副导航</dd>
+              </div>
+              <div>
+                <dt>Alt 1–{isOjMode ? '5' : '4'}</dt>
+                <dd>聚焦区域</dd>
+              </div>
+              <div>
+                <dt>Alt ?</dt>
+                <dd>帮助</dd>
+              </div>
+            </dl>
+            <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
+              开始使用
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="announcement-body">{renderAnnouncement(announcement)}</div>
+            <button type="button" className="primary-action help-confirm" onClick={closeHelp}>
+              知道了
+            </button>
+          </>
+        )}
       </Modal>
     </div>
   )
