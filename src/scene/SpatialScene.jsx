@@ -135,8 +135,8 @@ function CameraRig({ spatialState, reducedMotion, mobile, cameraRevision, paused
 
     if (service) {
       const [x, y, z] = service.position
-      position = [x + 1.55, y + 1.35, z + 2.35]
-      target = [x, y + 0.18, z]
+      position = [x + 2.8, y + 2.8, z + 4.4]
+      target = [x, y + 0.25, z]
     }
 
     controls.current?.setLookAt(...position, ...target, !reducedMotion && !paused)
