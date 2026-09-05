@@ -98,6 +98,7 @@ function BreadcrumbTrail({
 function App() {
   const capabilities = useMemo(() => detectCapabilities(), [])
   const compactViewport = window.matchMedia('(max-width: 720px)').matches
+  const preview3d = new URLSearchParams(window.location.search).get('preview') === '3d'
   const initialState = useMemo(() => parseLocation(window.location.search), [])
   const [spatialState, setSpatialState] = useState(() => initialState)
   const [theme, setTheme] = useState(() => {
@@ -108,6 +109,7 @@ function App() {
   const isOjMode = spatialState.namespace === NAMESPACES.OJ
   const [renderMode, setRenderMode] = useState(() => {
     if (initialState.namespace === NAMESPACES.OJ) return '2d'
+    if (preview3d) return '3d'
     if (compactViewport) return '2d'
     const stored = getStoredValue(preferenceKeys.renderMode)
     if (stored === '2d') return '2d'
@@ -115,7 +117,9 @@ function App() {
     return capabilities.recommendedMode
   })
   const [modeNotice, setModeNotice] = useState(() =>
-    initialState.namespace === NAMESPACES.OJ
+    preview3d
+      ? ''
+      : initialState.namespace === NAMESPACES.OJ
       ? '副导航 OJ 刷题资源始终使用 2D 列表呈现。'
       : capabilities.recommendedMode === '2d'
         ? '已根据设备能力启用轻量 2D 模式。'
