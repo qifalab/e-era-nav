@@ -5,7 +5,7 @@ export default function SolidServiceModel({ serviceId, color, theme, quality }) 
   const accent = color
   const face = theme === 'dark' ? '#163542' : '#d7f0ef'
   const shadow = quality === 'high'
-  return <group position={[0, 0.02, 0.16]}>
+  return <group position={[0, 0.12, 0.52]} scale={1.35}>
     <RoundedBox args={[0.94, 0.7, 0.2]} radius={0.12} smoothness={4} castShadow={shadow}>
       <meshPhysicalMaterial color={accent} roughness={0.2} metalness={0.62} clearcoat={0.8} clearcoatRoughness={0.18} emissive={accent} emissiveIntensity={0.1} />
     </RoundedBox>
