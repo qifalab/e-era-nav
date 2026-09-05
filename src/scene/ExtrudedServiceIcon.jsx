@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { buildExtrudedIconGeometry } from './extrudedIconGeometry'
+import SolidServiceModel from './SolidServiceModel'
 
 const pedestalGeometry = new THREE.CylinderGeometry(0.56, 0.66, 0.16, 20)
 const badgeGeometry = new THREE.CylinderGeometry(0.74, 0.82, 0.1, 6)
@@ -13,6 +14,7 @@ function damp(current, target, delta, reducedMotion) {
 }
 
 export default function ExtrudedServiceIcon({
+  serviceId,
   iconId,
   color,
   hovered,
@@ -155,6 +157,7 @@ export default function ExtrudedServiceIcon({
         />
         <mesh ref={halo} geometry={haloGeometry} material={materials.halo} rotation={[Math.PI / 2, 0, 0]} dispose={null} />
         <group ref={iconLayer} position={[0, 0, 0.1]}>
+          <SolidServiceModel serviceId={serviceId} color={color} theme={theme} quality={quality} />
           <mesh
             name={`service-icon:${iconId}`}
             geometry={geometry}
