@@ -485,8 +485,7 @@ export default function SpatialScene({
   const [inViewport, setInViewport] = useState(true)
   const [webglReady, setWebglReady] = useState(false)
   const sceneRef = useRef(null)
-  const preview3d = new URLSearchParams(window.location.search).get('preview') === '3d'
-  const mobile = !preview3d && window.matchMedia('(max-width: 720px)').matches
+  const mobile = window.matchMedia('(max-width: 720px)').matches
   const lowPower =
     mobile ||
     performanceProfile.saveData ||
