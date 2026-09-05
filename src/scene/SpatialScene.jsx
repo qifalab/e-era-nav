@@ -271,7 +271,6 @@ function ServiceNode({
       {!dimmed && (
         <>
           <ExtrudedServiceIcon
-            serviceId={service.slug}
             iconId={iconConfig.geometry.source}
             color={iconConfig.geometry.color}
             hovered={isHovered}
