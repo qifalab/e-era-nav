@@ -4,6 +4,9 @@ export default function SolidServiceModel({ serviceId, color, theme, quality }) 
   const accent = color
   const face = theme === 'dark' ? '#163542' : '#d7f0ef'
   const shadow = quality === 'high'
+  if (['era-clipboard','era-registration','era-forum','era-oj'].includes(serviceId)) {
+    return <group position={[0,0.1,0.48]} scale={1.12}><RoundedBox args={[0.88,0.64,0.2]} radius={0.1} smoothness={3} castShadow={shadow}><meshPhysicalMaterial color={accent} roughness={0.22} metalness={0.55} clearcoat={0.7}/></RoundedBox>{serviceId==='era-registration' ? <mesh position={[0,0,0.15]}><torusGeometry args={[0.18,0.045,10,24]}/><meshStandardMaterial color={face}/></mesh> : serviceId==='era-forum' ? <group><mesh position={[0,0.06,0.15]}><sphereGeometry args={[0.12,12,8]}/><meshStandardMaterial color={face}/></mesh><mesh position={[-0.18,-0.1,0.15]}><sphereGeometry args={[0.07,12,8]}/><meshStandardMaterial color={face}/></mesh></group> : <mesh position={[0,0,0.15]}><boxGeometry args={[0.32,0.18,0.035]}/><meshStandardMaterial color={face}/></mesh>}</group>
+  }
   if (['era-ide', 'era-git', 'era-team', 'era-image-host'].includes(serviceId)) {
     const kind = serviceId
     return <group position={[0, 0.1, 0.48]} scale={1.12}>
