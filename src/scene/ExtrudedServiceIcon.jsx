@@ -83,8 +83,8 @@ export default function ExtrudedServiceIcon({
     const dz = camera.position.z - worldPosition.z
     const targetYaw = Math.atan2(dx, dz)
     const cameraPitch = -Math.atan2(dy, Math.hypot(dx, dz))
-    const targetScale = pressed ? 0.94 : selected ? 1.42 : hovered ? 1.08 : 1
-    const targetLift = selected ? 0.32 : hovered ? 0.08 : 0
+    const targetScale = pressed ? 0.94 : selected ? 1.12 : hovered ? 1.05 : 1
+    const targetLift = selected ? 0.15 : hovered ? 0.07 : 0
     const targetPitch =
       reducedMotion || selected
         ? cameraPitch
