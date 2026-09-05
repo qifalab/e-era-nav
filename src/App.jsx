@@ -97,7 +97,7 @@ function BreadcrumbTrail({
 
 function App() {
   const capabilities = useMemo(() => detectCapabilities(), [])
-  const compactViewport = window.matchMedia('(max-width: 720px)').matches
+  const compactViewport = window.matchMedia('(max-width: 480px)').matches
   const preview3d = new URLSearchParams(window.location.search).get('preview') === '3d'
   const initialState = useMemo(() => parseLocation(window.location.search), [])
   const [spatialState, setSpatialState] = useState(() => initialState)
