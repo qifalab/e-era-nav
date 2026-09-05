@@ -4,7 +4,8 @@ import * as THREE from 'three'
 import { buildExtrudedIconGeometry } from './extrudedIconGeometry'
 
 const pedestalGeometry = new THREE.CylinderGeometry(0.56, 0.66, 0.16, 20)
-const rippleGeometry = new THREE.RingGeometry(0.5, 0.62, 36)
+const badgeGeometry = new THREE.CylinderGeometry(0.74, 0.82, 0.1, 6)
+const haloGeometry = new THREE.TorusGeometry(0.72, 0.018, 6, 32)
 const worldPosition = new THREE.Vector3()
 
 function damp(current, target, delta, reducedMotion) {
@@ -20,16 +21,13 @@ export default function ExtrudedServiceIcon({
   reducedMotion,
   quality,
   theme,
-  ripple = 0,
 }) {
   const root = useRef(null)
   const faceLayer = useRef(null)
   const iconLayer = useRef(null)
+  const halo = useRef(null)
   const iconMaterialRef = useRef(null)
-  const rippleRef = useRef(null)
-  const rippleMaterialRef = useRef(null)
-  const rippleStart = useRef(-1)
-  const rippleActive = useRef(false)
+  const haloMaterialRef = useRef(null)
   const camera = useThree((state) => state.camera)
   const invalidate = useThree((state) => state.invalidate)
   const geometry = useMemo(
@@ -50,44 +48,33 @@ export default function ExtrudedServiceIcon({
         roughness: 0.62,
         metalness: 0.3,
       }),
-    }),
-    [color, theme],
-  )
-  const rippleMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
+      badge: new THREE.MeshStandardMaterial({
+        color: theme === 'dark' ? '#172a39' : '#e8f1f1',
+        roughness: 0.34,
+        metalness: 0.52,
+        emissive: color,
+        emissiveIntensity: 0.035,
+      }),
+      halo: new THREE.MeshBasicMaterial({
         color,
         transparent: true,
         opacity: 0,
         depthWrite: false,
       }),
-    [color],
+    }),
+    [color, theme],
   )
 
   useEffect(() => {
     iconMaterialRef.current = materials.icon
+    haloMaterialRef.current = materials.halo
     return () => Object.values(materials).forEach((material) => material.dispose())
   }, [materials])
 
-  useEffect(() => {
-    rippleMaterialRef.current = rippleMaterial
-    return () => {
-      rippleMaterialRef.current = null
-      rippleMaterial.dispose()
-    }
-  }, [rippleMaterial])
-
-  useEffect(() => {
-    if (!ripple || reducedMotion) return
-    rippleStart.current = -1
-    rippleActive.current = true
-    invalidate()
-  }, [invalidate, reducedMotion, ripple])
-
   useEffect(() => invalidate(), [hovered, invalidate, pressed, selected])
 
-  useFrame((state, delta) => {
-    if (!root.current || !faceLayer.current || !iconLayer.current) return
+  useFrame((_, delta) => {
+    if (!root.current || !faceLayer.current || !iconLayer.current || !halo.current) return
     root.current.getWorldPosition(worldPosition)
     const dx = camera.position.x - worldPosition.x
     const dy = camera.position.y - worldPosition.y
@@ -137,6 +124,12 @@ export default function ExtrudedServiceIcon({
     )
     moving ||= Math.abs(nextRotation - targetIconRotation) > 0.001
     iconLayer.current.rotation.y = nextRotation
+    const targetHaloOpacity = selected ? 0.72 : hovered ? 0.42 : 0
+    if (haloMaterialRef.current) {
+      haloMaterialRef.current.opacity = damp(haloMaterialRef.current.opacity, targetHaloOpacity, delta, reducedMotion)
+    }
+    halo.current.rotation.z += (reducedMotion ? 0 : 0.28) * delta
+    halo.current.rotation.x = cameraPitch * 0.55
 
     if (iconMaterialRef.current) {
       iconMaterialRef.current.emissiveIntensity = selected
@@ -145,33 +138,22 @@ export default function ExtrudedServiceIcon({
           ? 0.11
           : 0.04
     }
-
-    if (rippleActive.current) {
-      const elapsed = state.clock.elapsedTime
-      if (rippleStart.current < 0) rippleStart.current = elapsed
-      const progress = Math.min((elapsed - rippleStart.current) / 0.6, 1)
-
-      if (rippleRef.current && rippleMaterialRef.current) {
-        const scale = 0.35 + progress * 3.2
-        rippleRef.current.scale.setScalar(scale)
-        rippleMaterialRef.current.opacity = (1 - progress) * 0.55
-        rippleRef.current.visible = true
-      }
-
-      if (progress >= 1) {
-        rippleActive.current = false
-        if (rippleRef.current) rippleRef.current.visible = false
-      } else {
-        invalidate()
-      }
-    }
-
     if (moving && !reducedMotion) invalidate()
   })
 
   return (
     <group ref={root} dispose={null}>
       <group ref={faceLayer} position={[0, 0.25, 0]}>
+        <mesh
+          geometry={badgeGeometry}
+          material={materials.badge}
+          position={[0, -0.02, -0.12]}
+          rotation={[0, 0, Math.PI / 6]}
+          castShadow={quality === 'high'}
+          receiveShadow={quality === 'high'}
+          dispose={null}
+        />
+        <mesh ref={halo} geometry={haloGeometry} material={materials.halo} rotation={[Math.PI / 2, 0, 0]} dispose={null} />
         <group ref={iconLayer} position={[0, 0, 0.1]}>
           <mesh
             name={`service-icon:${iconId}`}
@@ -187,15 +169,6 @@ export default function ExtrudedServiceIcon({
           />
         </group>
       </group>
-      <mesh
-        ref={rippleRef}
-        geometry={rippleGeometry}
-        material={rippleMaterial}
-        position={[0, -0.58, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        visible={false}
-        dispose={null}
-      />
       <mesh
         geometry={pedestalGeometry}
         material={materials.pedestal}

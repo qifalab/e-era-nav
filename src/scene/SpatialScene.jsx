@@ -23,6 +23,7 @@ import ExtrudedServiceIcon from './ExtrudedServiceIcon'
 import { disposeExtrudedIconGeometryCache } from './extrudedIconGeometry'
 
 const shadowGeometry = new THREE.CircleGeometry(0.58, 20)
+const orbitGeometry = new THREE.TorusGeometry(2.25, 0.012, 6, 64)
 
 function FrameBudgetMonitor({ quality, onDegrade, onFallback }) {
   const sample = useRef({ frames: 0, elapsed: 0, slowWindows: 0 })
@@ -204,6 +205,14 @@ function Region({ category, active, onSelect, theme }) {
       <mesh position={[0, -0.055, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[3.12, 3.25, 64]} />
         <meshBasicMaterial color={category.glow} transparent opacity={active ? 0.75 : 0.38} />
+      </mesh>
+      <mesh position={[0, 0.16, 0]} rotation={[-Math.PI / 2, 0, 0]} rotation-x={active ? 0.08 : 0}>
+        <primitive object={orbitGeometry} attach="geometry" />
+        <meshBasicMaterial color={category.accent} transparent opacity={active ? 0.5 : 0.16} depthWrite={false} />
+      </mesh>
+      <mesh position={[2.25, 0.16, 0]}>
+        <sphereGeometry args={[active ? 0.075 : 0.045, 10, 8]} />
+        <meshBasicMaterial color={category.glow} transparent opacity={active ? 0.9 : 0.35} />
       </mesh>
       <Html position={[0, 0.06, -2.42]} center distanceFactor={12} zIndexRange={[5, 0]}>
         <div className={`scene-region-label ${active ? 'is-active' : ''}`} aria-hidden="true">
