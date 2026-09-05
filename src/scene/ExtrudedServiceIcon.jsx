@@ -36,7 +36,6 @@ export default function ExtrudedServiceIcon({
     () => buildExtrudedIconGeometry(iconId, quality === 'low' ? 'low' : 'high'),
     [iconId, quality],
   )
-  const isPassport = serviceId === 'era-passport'
   const materials = useMemo(
     () => ({
       icon: new THREE.MeshStandardMaterial({
@@ -163,7 +162,6 @@ export default function ExtrudedServiceIcon({
             name={`service-icon:${iconId}`}
             geometry={geometry}
             material={materials.icon}
-            visible={!isPassport}
             castShadow={quality === 'high'}
             userData={{
               isServiceIcon: true,
