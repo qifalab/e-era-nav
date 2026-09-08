@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 
-const MODEL_URL = '/models/navigation-sculptures-v1.glb'
+import MODEL_URL from '../assets/navigation-sculptures.glb?url'
 const worldPosition = new THREE.Vector3()
 const pedestalGeometry = new THREE.LatheGeometry(
   [[0, -0.08], [0.61, -0.08], [0.67, -0.06], [0.69, -0.02],
@@ -18,7 +18,7 @@ export default function BlenderServiceModel({
   serviceSlug, iconId, color, hovered, selected, pressed,
   reducedMotion, quality, theme, ripple = 0,
 }) {
-  const { nodes } = useGLTF(MODEL_URL)
+  const { nodes } = useGLTF(MODEL_URL, false)
   const root = useRef(null)
   const sculpture = useRef(null)
   const rippleRef = useRef(null)

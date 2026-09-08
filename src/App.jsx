@@ -17,6 +17,7 @@ import './SpatialApp.css'
 import Directory from './components/Directory'
 import Modal from './components/Modal'
 import SceneErrorBoundary from './components/SceneErrorBoundary'
+import sculptureUrl from './assets/navigation-sculptures.glb?url'
 import ServiceCardFace from './components/ServiceCardFace'
 import {
   ojCategories,
@@ -728,6 +729,7 @@ function App() {
                 onError={() => fallbackTo2d('3D 图标场景加载失败，已切换到 2D 服务列表。')}
                 fallback={null}
               >
+                <link rel="preload" href={sculptureUrl} as="fetch" crossOrigin="anonymous" />
                 <Suspense
                   fallback={
                     <div className="scene-loading" role="status">

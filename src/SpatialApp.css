@@ -1917,23 +1917,19 @@ button {
 
 /* Give the Blender sculptures a clear display area above the category controls. */
 @media (min-width: 1050px) {
+  .spatial-stage--3d {
+    --stage-gutter: max(28px, calc((100vw - 1180px) / 2));
+    --stage-copy-width: clamp(260px, 27vw, 340px);
+  }
   .spatial-stage--3d .scene-canvas {
-    left: 27%;
+    left: calc(var(--stage-gutter) + var(--stage-copy-width) + 32px);
+    right: var(--stage-gutter);
     bottom: 116px;
     top: 26px;
   }
-  .spatial-stage--3d .hero-copy { width: 27%; }
+  .spatial-stage--3d .hero-copy { width: var(--stage-copy-width); }
   .spatial-stage--3d .hero-copy h1 { font-size: clamp(2.5rem, 4.4vw, 4.2rem); }
   .spatial-stage--3d .hero-copy > p:last-child { max-width: 270px; }
-  .spatial-stage--3d.is-focused .scene-canvas { left: 24%; }
-}
-.scene-model-loading {
-  white-space: nowrap;
-  padding: 12px 18px;
-  color: var(--ink-muted);
-  background: var(--surface);
-  border-radius: 12px;
-  font-size: 13px;
 }
 @media (min-width: 1050px) {
   .service-modal--sculpture {
@@ -1958,4 +1954,78 @@ button {
   .spatial-stage--3d .scene-canvas { top: 235px; bottom: 165px; }
   .spatial-stage--3d .scene-region-label { min-width: 104px; padding: 8px 10px; }
   .spatial-stage--3d .scene-region-label strong { font-size: 10px; }
+}
+
+.scene-canvas { background: var(--canvas-bg); }
+.scene-canvas canvas { transition: opacity .25s ease; }
+.scene-canvas[data-models-ready='false'] canvas { opacity: 0; }
+.scene-loading-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 20px;
+  color: var(--ink-muted);
+}
+.scene-loading-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 40px;
+  width: min(470px, 90%);
+}
+.scene-loading-island {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 22px 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--island-color) 42%, var(--border));
+  border-radius: 50% 50% 22px 22px;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  font-size: 11px;
+}
+.scene-loading-pieces { display: flex; align-items: end; gap: 8px; height: 28px; }
+.scene-loading-pieces i {
+  width: 20px;
+  height: 26px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--island-color) 38%, var(--surface-solid));
+  border-bottom: 3px solid color-mix(in srgb, var(--island-color) 48%, transparent);
+}
+.scene-loading-pieces i:nth-child(2n) { height: 19px; }
+.scene-loading-message { text-align: center; font-size: 13px; }
+.scene-loading-message strong { color: var(--ink); font-weight: 600; }
+.scene-loading-message p { margin: 7px 0 0; font-size: 12px; }
+.scene-loading-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.scene-loading-action {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  color: var(--ink);
+  background: var(--surface-solid);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.scene-loading-action:hover { border-color: var(--accent); }
+@media (max-width: 720px) {
+  .scene-loading-preview { gap: 16px 20px; }
+  .scene-loading-island { padding: 14px 8px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-canvas canvas { transition: none; }
+  .scene-loading-spinner { animation: none; }
 }

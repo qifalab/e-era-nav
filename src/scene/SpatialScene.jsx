@@ -22,6 +22,7 @@ import {
   ICON_DEFINITIONS,
 } from '../icons/originalIconRegistry'
 import BlenderServiceModel from './BlenderServiceModel'
+import SceneLoading from './SceneLoading'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
 const shadowGeometry = new THREE.CircleGeometry(0.58, 20)
@@ -407,7 +408,6 @@ function World({
   const visibleServices = services.filter((service) => spatialState.service ? service.slug === spatialState.service : !spatialState.category || service.category === spatialState.category)
   return (
     <>
-      <color attach="background" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4']} />
       <fog attach="fog" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4', 42, 78]} />
       <hemisphereLight
         intensity={theme === 'dark' ? .95 : .85}
@@ -484,6 +484,11 @@ function World({
   )
 }
 
+function SceneReady({ onReady }) {
+  useEffect(() => { onReady() }, [onReady])
+  return null
+}
+
 export default function SpatialScene({
   spatialState,
   onCategory,
@@ -499,6 +504,10 @@ export default function SpatialScene({
   const [visible, setVisible] = useState(!document.hidden)
   const [inViewport, setInViewport] = useState(true)
   const [webglReady, setWebglReady] = useState(false)
+  const [modelsReady, setModelsReady] = useState(false)
+  const handleModelsReady = useCallback(() => setModelsReady(true), [])
+  const useListWhileLoading = useCallback(() => onFallback('已切换到 2D 服务列表。'), [onFallback])
+  const loadingTimedOut = useCallback(() => onFallback('3D 模型加载较慢，已切换到服务列表，可稍后重试 3D。'), [onFallback])
   const sceneRef = useRef(null)
   const mobile = window.matchMedia('(max-width: 720px)').matches
   const lowPower =
@@ -547,14 +556,15 @@ export default function SpatialScene({
     <div
       ref={sceneRef}
       className="scene-canvas"
-      aria-hidden="true"
       data-testid="spatial-scene"
+      data-models-ready={modelsReady}
       data-render-active={visible && inViewport && !paused}
       data-reduced-motion={reducedMotion}
       data-webgl-ready={webglReady}
       data-quality-tier={quality}
     >
       <Canvas
+        aria-hidden="true"
         orthographic
         camera={{ position: overviewCamera.position, zoom: 32, near: 0.1, far: 100 }}
         dpr={dpr}
@@ -562,7 +572,7 @@ export default function SpatialScene({
         shadows={quality === 'high'}
         gl={{
           antialias: quality === 'high',
-          alpha: false,
+          alpha: true,
           powerPreference: quality === 'low' ? 'low-power' : 'high-performance',
         }}
         onCreated={({ gl }) => {
@@ -578,12 +588,13 @@ export default function SpatialScene({
         }}
         onPointerMissed={() => onCategory(null)}
       >
-        <FrameBudgetMonitor
-          quality={quality}
-          onDegrade={degradeQuality}
-          onFallback={fallbackForPerformance}
-        />
-        <Suspense fallback={<Html center><div className="scene-model-loading">正在加载服务模型…</div></Html>}>
+        <color attach="background" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4']} />
+        <Suspense fallback={null}>
+          <FrameBudgetMonitor
+            quality={quality}
+            onDegrade={degradeQuality}
+            onFallback={fallbackForPerformance}
+          />
           <World
             spatialState={spatialState}
             onCategory={onCategory}
@@ -596,12 +607,14 @@ export default function SpatialScene({
             cameraRevision={cameraRevision}
             paused={paused}
           />
+          <SceneReady onReady={handleModelsReady} />
           <GeometryAudit revision={`${spatialState.service || 'overview'}:${quality}`} />
         </Suspense>
       </Canvas>
-      <div className="scene-quality" aria-hidden="true">
+      {!modelsReady && <SceneLoading onUseList={useListWhileLoading} onTimeout={loadingTimedOut} />}
+      {modelsReady && <div className="scene-quality" aria-hidden="true">
         {quality === 'high' ? 'HQ' : 'ECO'}
-      </div>
+      </div>}
     </div>
   )
 }

@@ -267,7 +267,7 @@ test('输出原版 2D icon、3D 正视与 3D 斜视的 18 项 catalog', {
   await enableSoftwareWebGLFor3d(frontPage)
   await page.goto('/')
   await frontPage.goto('/')
-  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true')
+  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true', { timeout: 15000 })
   await expect(frontPage.getByTestId('spatial-scene')).toHaveAttribute(
     'data-webgl-ready',
     'true',
@@ -396,7 +396,7 @@ test('输出六个可见厚度的 3D icon Mesh focus 近景', {
 
   for (const [slug, name] of focusModels) {
     await page.goto('/')
-    await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true')
+    await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true', { timeout: 15000 })
     await page.getByRole('combobox', { name: '搜索服务' }).fill(name)
     await page.getByRole('option', { name: new RegExp(name) }).click()
     await expect(
@@ -426,7 +426,7 @@ test('搜索命中真实 3D Mesh 且禁止 icon 贴图与 DOM 替身', async ({ 
   test.skip(testInfo.project.name !== 'desktop')
   await enableSoftwareWebGLFor3d(page)
   await page.goto('/')
-  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true')
+  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true', { timeout: 15000 })
   await expect
     .poll(() =>
       page.evaluate(() => window.__eEraReadGeometryAudit?.().length || 0),
@@ -477,9 +477,7 @@ test('搜索命中真实 3D Mesh 且禁止 icon 贴图与 DOM 替身', async ({ 
       page.evaluate(() => window.__eEraReadGeometryAudit?.().length || 0),
     )
     .toBe(1)
-  await page.waitForTimeout(320)
-  const selectedAudit = await page.evaluate(() => window.__eEraReadGeometryAudit())
-  expect(Math.abs(selectedAudit[0].poseY)).toBeGreaterThan(0.45)
+  await expect.poll(() => page.evaluate(() => Math.abs(window.__eEraReadGeometryAudit()[0].poseY))).toBeGreaterThan(0.45)
   await page.evaluate(
     () =>
       new Promise((resolve) => {
@@ -578,7 +576,7 @@ test('WebGL 上下文丢失时即时降级且保持 18 个入口', async ({ page
   test.skip(testInfo.project.name !== 'desktop')
   await enableSoftwareWebGLFor3d(page)
   await page.goto('/')
-  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true')
+  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true', { timeout: 15000 })
   const canvas = page.locator('.scene-canvas canvas')
   await expect(canvas).toBeVisible()
   await canvas.evaluate((element) => {
@@ -688,7 +686,7 @@ test('主线程帧预算和首屏交互保持可用', async ({ page }, testInfo)
   test.skip(testInfo.project.name !== 'desktop')
   await enableSoftwareWebGLFor3d(page)
   await page.goto('/')
-  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true')
+  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-webgl-ready', 'true', { timeout: 15000 })
   await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-quality-tier', 'high')
   const sample = await page.evaluate(
     () =>
@@ -782,8 +780,47 @@ test('聚焦态显示上下文路径并可就地返回总览', async ({ page }, 
 test('Blender 模型请求失败时恢复到完整服务目录', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop')
   await enableSoftwareWebGLFor3d(page)
-  await page.route('**/models/navigation-sculptures-v1.glb', (route) => route.abort())
+  await page.route('**/assets/navigation-sculptures-*.glb', (route) => route.abort())
   await page.goto('/')
   await expect(page.getByRole('button', { name: '切换到3D模式' })).toBeVisible()
   await expect(page.locator('#service-directory a[data-direct-service]')).toHaveCount(18)
+})
+
+test('宽屏慢网加载时背景完整、标题不重叠且可以先用列表', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await enableSoftwareWebGLFor3d(page)
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  let release
+  const held = new Promise((resolve) => { release = resolve })
+  await page.route('**/assets/navigation-sculptures-*.glb', async (route) => {
+    await held
+    await route.abort()
+  })
+  try {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const scene = page.getByTestId('spatial-scene')
+    await expect(scene).toHaveAttribute('data-models-ready', 'false')
+    await expect(page.getByTestId('model-loading')).toBeVisible()
+    await expect(scene.locator('canvas')).toHaveCSS('opacity', '0')
+    await expect(scene).toHaveCSS('background-color', 'rgb(232, 241, 244)')
+    const hero = await page.locator('.hero-copy').boundingBox()
+    const modelArea = await scene.boundingBox()
+    expect(modelArea.x).toBeGreaterThanOrEqual(hero.x + hero.width + 24)
+    await page.getByRole('button', { name: '先用 2D 服务列表' }).click()
+    await expect(page.locator('#service-directory a[data-direct-service]')).toHaveCount(18)
+  } finally { release() }
+})
+
+test('压缩模型只下载一次并完成场景呈现', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await enableSoftwareWebGLFor3d(page)
+  const requests = []
+  page.on('request', (request) => {
+    if (/\/assets\/navigation-sculptures-[^/]+\.glb$/.test(request.url())) requests.push(request.url())
+  })
+  await page.goto('/')
+  await expect(page.getByTestId('spatial-scene')).toHaveAttribute('data-models-ready', 'true', { timeout: 15000 })
+  await expect(page.getByTestId('model-loading')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => window.__eEraReadGeometryAudit?.().length || 0)).toBe(18)
+  expect(requests).toHaveLength(1)
 })

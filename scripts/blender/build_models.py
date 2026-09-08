@@ -7,7 +7,7 @@ from pathlib import Path
 from mathutils import Vector
 
 ROOT = Path(sys.argv[sys.argv.index('--') + 1])
-OUT = ROOT / 'public/models'
+OUT = ROOT / 'design/blender'
 OUT.mkdir(parents=True, exist_ok=True)
 (ROOT / 'artifacts').mkdir(parents=True, exist_ok=True)
 (ROOT / 'design/blender').mkdir(parents=True, exist_ok=True)
@@ -328,7 +328,7 @@ for slug,fn in [('era-passport',passport),('era-ide',ide),('era-cloud',cloud),('
 
 bpy.ops.object.select_all(action='DESELECT')
 for o in models.values():o.select_set(True)
-bpy.ops.export_scene.gltf(filepath=str(OUT/'navigation-sculptures-v1.glb'),export_format='GLB',use_selection=True,export_extras=True,export_yup=True)
+bpy.ops.export_scene.gltf(filepath=str(OUT/'navigation-sculptures.raw.glb'),export_format='GLB',use_selection=True,export_extras=True,export_yup=True)
 manifest={}
 for slug,o in models.items():
     o.data.calc_loop_triangles()
