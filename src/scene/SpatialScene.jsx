@@ -388,7 +388,7 @@ function StudioEnvironment() {
     return target
   }, [gl])
   useEffect(() => () => environment.dispose(), [environment])
-  return <Environment map={environment.texture} environmentIntensity={.65} />
+  return <Environment map={environment.texture} environmentIntensity={.45} />
 }
 
 function World({
@@ -410,13 +410,13 @@ function World({
       <color attach="background" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4']} />
       <fog attach="fog" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4', 42, 78]} />
       <hemisphereLight
-        intensity={theme === 'dark' ? 1.65 : 1.8}
+        intensity={theme === 'dark' ? .95 : .85}
         color={theme === 'dark' ? '#c8e7e3' : '#ffffff'}
         groundColor={theme === 'dark' ? '#10262b' : '#9b8e79'}
       />
       <directionalLight
         position={[7, 13, 8]}
-        intensity={theme === 'dark' ? 2.8 : 2.4}
+        intensity={theme === 'dark' ? 2.5 : 2.1}
         color="#fff3dc"
         castShadow={quality === 'high'}
         shadow-camera-left={-16}
@@ -430,7 +430,7 @@ function World({
       <pointLight position={[10, 4, 6]} intensity={0.9} color="#c29aaa" distance={18} />
 
       <StudioEnvironment />
-      <directionalLight position={[-8, 7, -4]} intensity={1.8} color="#bddfff" />
+      <directionalLight position={[-8, 7, -4]} intensity={.8} color="#bddfff" />
       <Grid
         position={[0, -0.6, 0]}
         args={[36, 36]}
