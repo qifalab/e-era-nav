@@ -1,0 +1,149 @@
+{
+  "generator": "5.2.1 LTS",
+  "models": {
+    "era-passport": {
+      "triangles": 2740,
+      "dimensions": [
+        1.13,
+        0.638,
+        1.399
+      ]
+    },
+    "era-ide": {
+      "triangles": 6808,
+      "dimensions": [
+        1.5,
+        0.87,
+        1.19
+      ]
+    },
+    "era-cloud": {
+      "triangles": 5388,
+      "dimensions": [
+        1.52,
+        0.586,
+        1.44
+      ]
+    },
+    "era-trust": {
+      "triangles": 688,
+      "dimensions": [
+        1.167,
+        0.465,
+        1.345
+      ]
+    },
+    "era-lottery": {
+      "triangles": 1472,
+      "dimensions": [
+        1.2,
+        0.91,
+        1.354
+      ]
+    },
+    "era-id": {
+      "triangles": 1884,
+      "dimensions": [
+        1.4,
+        0.325,
+        1.13
+      ]
+    },
+    "era-clipboard": {
+      "triangles": 1184,
+      "dimensions": [
+        0.99,
+        0.375,
+        1.27
+      ]
+    },
+    "era-registration": {
+      "triangles": 1904,
+      "dimensions": [
+        1.18,
+        0.557,
+        1.25
+      ]
+    },
+    "era-image-host": {
+      "triangles": 1176,
+      "dimensions": [
+        1.3,
+        0.48,
+        1.14
+      ]
+    },
+    "era-forum": {
+      "triangles": 2240,
+      "dimensions": [
+        1.41,
+        0.613,
+        1.204
+      ]
+    },
+    "era-git": {
+      "triangles": 2560,
+      "dimensions": [
+        1.06,
+        0.6,
+        1.445
+      ]
+    },
+    "acm-team": {
+      "triangles": 1508,
+      "dimensions": [
+        1.3,
+        0.52,
+        1.32
+      ]
+    },
+    "era-team": {
+      "triangles": 2912,
+      "dimensions": [
+        1.4,
+        0.769,
+        1.285
+      ]
+    },
+    "era-developer": {
+      "triangles": 6092,
+      "dimensions": [
+        1.46,
+        1.186,
+        1.447
+      ]
+    },
+    "miaoji-lab": {
+      "triangles": 2556,
+      "dimensions": [
+        1.578,
+        0.792,
+        1.425
+      ]
+    },
+    "era-oj": {
+      "triangles": 1184,
+      "dimensions": [
+        1.3,
+        0.59,
+        1.26
+      ]
+    },
+    "qifa-lab": {
+      "triangles": 3492,
+      "dimensions": [
+        1.156,
+        0.613,
+        1.515
+      ]
+    },
+    "duya-note": {
+      "triangles": 1212,
+      "dimensions": [
+        1.08,
+        0.477,
+        1.375
+      ]
+    }
+  }
+}

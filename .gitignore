@@ -33,3 +33,7 @@ releases
 
 # WorkBuddy project memory
 .workbuddy
+
+# Blender autosave copies; the editable .blend itself is tracked.
+*.blend1
+*.blend2

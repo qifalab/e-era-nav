@@ -722,7 +722,7 @@ function App() {
             </a>
           </section>
         ) : (
-          <section className={`spatial-stage spatial-stage--${renderMode}`} aria-labelledby="hero-title">
+          <section className={`spatial-stage spatial-stage--${renderMode} ${spatialState.category ? 'is-focused' : ''}`} aria-labelledby="hero-title">
             {renderMode === '3d' ? (
               <SceneErrorBoundary
                 onError={() => fallbackTo2d('3D 图标场景加载失败，已切换到 2D 服务列表。')}
@@ -732,7 +732,7 @@ function App() {
                   fallback={
                     <div className="scene-loading" role="status">
                       <span />
-                      正在生成 3D 图标实体…
+                      正在加载 3D 服务模型…
                     </div>
                   }
                 >
@@ -880,7 +880,7 @@ function App() {
         title={selectedService?.name || ''}
         eyebrow={selectedCategory?.name}
         onClose={closeService}
-        className="service-modal"
+        className={`service-modal ${renderMode === '3d' ? 'service-modal--sculpture' : ''}`}
       >
         {selectedService && (
           <>

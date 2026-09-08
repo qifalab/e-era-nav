@@ -436,6 +436,7 @@ test('搜索命中真实 3D Mesh 且禁止 icon 贴图与 DOM 替身', async ({ 
   expect(
     overviewAudit.every(
       (icon) =>
+        icon.renderKind === 'blender-gltf' &&
         icon.isMesh &&
         icon.hasPosition &&
         icon.hasNormal &&
@@ -776,4 +777,13 @@ test('聚焦态显示上下文路径并可就地返回总览', async ({ page }, 
   await categoryPath.getByRole('button', { name: '总览' }).click()
   await expect(page.getByRole('navigation', { name: '当前服务路径' })).toHaveCount(0)
   expect(new URL(page.url()).search).toBe('')
+})
+
+test('Blender 模型请求失败时恢复到完整服务目录', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await enableSoftwareWebGLFor3d(page)
+  await page.route('**/models/navigation-sculptures-v1.glb', (route) => route.abort())
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: '切换到3D模式' })).toBeVisible()
+  await expect(page.locator('#service-directory a[data-direct-service]')).toHaveCount(18)
 })

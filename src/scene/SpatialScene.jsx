@@ -1,4 +1,5 @@
 import {
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -8,6 +9,7 @@ import {
 } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
+  Environment,
   CameraControls,
   CameraControlsImpl,
   Grid,
@@ -19,8 +21,8 @@ import {
   getServiceIconConfig,
   ICON_DEFINITIONS,
 } from '../icons/originalIconRegistry'
-import ExtrudedServiceIcon from './ExtrudedServiceIcon'
-import { disposeExtrudedIconGeometryCache } from './extrudedIconGeometry'
+import BlenderServiceModel from './BlenderServiceModel'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
 const shadowGeometry = new THREE.CircleGeometry(0.58, 20)
 
@@ -63,8 +65,10 @@ function GeometryAudit({ revision }) {
       scene.updateMatrixWorld(true)
       scene.traverse((object) => {
         if (!object.userData?.isServiceIcon) return
-        object.geometry.computeBoundingBox()
-        const bounds = object.geometry.boundingBox
+        const box = new THREE.Box3().setFromObject(object)
+        const bounds = { min: box.min, max: box.max }
+        const meshes = []
+        object.traverse((child) => { if (child.isMesh) meshes.push(child) })
         const projected = [
           [bounds.min.x, bounds.min.y, bounds.min.z],
           [bounds.min.x, bounds.min.y, bounds.max.z],
@@ -74,22 +78,18 @@ function GeometryAudit({ revision }) {
           [bounds.max.x, bounds.min.y, bounds.max.z],
           [bounds.max.x, bounds.max.y, bounds.min.z],
           [bounds.max.x, bounds.max.y, bounds.max.z],
-        ].map(([x, y, z]) =>
-          new THREE.Vector3(x, y, z)
-            .applyMatrix4(object.matrixWorld)
-            .project(camera),
-        )
+        ].map(([x, y, z]) => new THREE.Vector3(x, y, z).project(camera))
         const screenX = projected.map((point) => ((point.x + 1) / 2) * size.width)
         const screenY = projected.map((point) => ((1 - point.y) / 2) * size.height)
         icons.push({
           iconId: object.userData.iconId,
-          isMesh: object.isMesh === true,
-          hasPosition: Boolean(object.geometry.attributes.position),
-          hasNormal: Boolean(object.geometry.attributes.normal),
-          hasIndex: Boolean(object.geometry.index),
-          depth:
-            object.geometry.boundingBox.max.z -
-            object.geometry.boundingBox.min.z,
+          serviceSlug: object.userData.serviceSlug,
+          renderKind: object.userData.renderKind,
+          isMesh: meshes.length > 0,
+          hasPosition: meshes.every((mesh) => Boolean(mesh.geometry.attributes.position)),
+          hasNormal: meshes.every((mesh) => Boolean(mesh.geometry.attributes.normal)),
+          hasIndex: meshes.every((mesh) => Boolean(mesh.geometry.index)),
+          depth: bounds.max.z - bounds.min.z,
           poseY: object.parent.rotation.y,
           screenBounds: {
             left: Math.min(...screenX),
@@ -97,12 +97,7 @@ function GeometryAudit({ revision }) {
             right: Math.max(...screenX),
             bottom: Math.max(...screenY),
           },
-          hasTexture: Boolean(
-            object.material.map ||
-              object.material.normalMap ||
-              object.material.alphaMap ||
-              object.material.emissiveMap,
-          ),
+          hasTexture: meshes.some((mesh) => Boolean(mesh.material.map)),
         })
       })
       return icons
@@ -120,6 +115,7 @@ function GeometryAudit({ revision }) {
 
 function CameraRig({ spatialState, reducedMotion, mobile, cameraRevision, paused }) {
   const controls = useRef(null)
+  const size = useThree((state) => state.size)
 
   useEffect(() => {
     const service = serviceBySlug[spatialState.service]
@@ -128,7 +124,7 @@ function CameraRig({ spatialState, reducedMotion, mobile, cameraRevision, paused
     let target = overviewCamera.target
 
     if (category) {
-      position = category.camera
+      position = [category.position[0], 10, category.position[2] + 11]
       target = category.position
     }
 
@@ -139,7 +135,9 @@ function CameraRig({ spatialState, reducedMotion, mobile, cameraRevision, paused
     }
 
     controls.current?.setLookAt(...position, ...target, !reducedMotion && !paused)
-  }, [cameraRevision, paused, reducedMotion, spatialState.category, spatialState.service])
+    const fit = service ? [4.6, 4.2] : category ? [9.6, 8.5] : [19.5, 15]
+    controls.current?.zoomTo(Math.min(size.width / fit[0], size.height / fit[1]), !reducedMotion && !paused)
+  }, [cameraRevision, paused, reducedMotion, spatialState.category, spatialState.service, size.width, size.height])
 
   useEffect(() => {
     if (!controls.current) return
@@ -156,6 +154,8 @@ function CameraRig({ spatialState, reducedMotion, mobile, cameraRevision, paused
       makeDefault
       smoothTime={reducedMotion ? 0.01 : 0.38}
       draggingSmoothTime={0.08}
+      minZoom={15}
+      maxZoom={210}
       minDistance={3}
       maxDistance={25}
       minPolarAngle={0.25}
@@ -175,7 +175,8 @@ function Region({ category, active, onSelect, theme }) {
       scale={active ? 1.045 : hovered ? 1.02 : 1}
     >
       <mesh
-        position={[0, -0.32, 0]}
+        receiveShadow
+        position={[0, -0.19, 0]}
         onClick={(event) => {
           event.stopPropagation()
           onSelect(category.slug)
@@ -190,7 +191,7 @@ function Region({ category, active, onSelect, theme }) {
           document.body.style.cursor = ''
         }}
       >
-        <cylinderGeometry args={[3.55, 3.85, 0.5, 64, 1]} />
+        <cylinderGeometry args={[3.15, 3.3, 0.24, 64, 1]} />
         <meshPhysicalMaterial
           color={theme === 'dark' ? '#111b20' : '#d9e4df'}
           metalness={0.22}
@@ -202,13 +203,13 @@ function Region({ category, active, onSelect, theme }) {
         />
       </mesh>
       <mesh position={[0, -0.055, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[3.12, 3.25, 64]} />
+        <ringGeometry args={[2.96, 3.015, 64]} />
         <meshBasicMaterial color={category.glow} transparent opacity={active ? 0.75 : 0.38} />
       </mesh>
-      <Html position={[0, 0.06, -2.42]} center distanceFactor={12} zIndexRange={[5, 0]}>
+      <Html position={[0, -0.02, 3.25]} center zIndexRange={[5, 0]}>
         <div className={`scene-region-label ${active ? 'is-active' : ''}`} aria-hidden="true">
-          <span>{category.shortName}</span>
-          <strong>{category.name}</strong>
+          <span>{String(categories.indexOf(category) + 1).padStart(2, '0')}</span>
+          <strong>{category.shortName}</strong>
         </div>
       </Html>
     </group>
@@ -261,7 +262,8 @@ function ServiceNode({
     >
       {!dimmed && (
         <>
-          <ExtrudedServiceIcon
+          <BlenderServiceModel
+            serviceSlug={service.slug}
             iconId={iconConfig.geometry.source}
             color={iconConfig.geometry.color}
             hovered={isHovered}
@@ -290,7 +292,7 @@ function ServiceNode({
   )
 }
 
-function GroundShadows({ theme }) {
+function GroundShadows({ theme, visibleServices }) {
   const instances = useRef(null)
   const material = useMemo(
     () =>
@@ -308,7 +310,7 @@ function GroundShadows({ theme }) {
     const matrix = new THREE.Matrix4()
     const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))
     const scale = new THREE.Vector3(0.84, 0.54, 1)
-    services.forEach((service, index) => {
+    visibleServices.forEach((service, index) => {
       matrix.compose(
         new THREE.Vector3(service.position[0], -0.045, service.position[2]),
         quaternion,
@@ -318,14 +320,14 @@ function GroundShadows({ theme }) {
     })
     instances.current.instanceMatrix.needsUpdate = true
     instances.current.computeBoundingSphere()
-  }, [])
+  }, [visibleServices])
 
   useEffect(() => () => material.dispose(), [material])
 
   return (
     <instancedMesh
       ref={instances}
-      args={[shadowGeometry, material, services.length]}
+      args={[shadowGeometry, material, visibleServices.length]}
       renderOrder={-1}
       dispose={null}
     />
@@ -375,6 +377,20 @@ function Bridges({ theme }) {
   )
 }
 
+function StudioEnvironment() {
+  const gl = useThree((state) => state.gl)
+  const environment = useMemo(() => {
+    const generator = new THREE.PMREMGenerator(gl)
+    const room = new RoomEnvironment()
+    const target = generator.fromScene(room, .04)
+    room.dispose()
+    generator.dispose()
+    return target
+  }, [gl])
+  useEffect(() => () => environment.dispose(), [environment])
+  return <Environment map={environment.texture} environmentIntensity={.65} />
+}
+
 function World({
   spatialState,
   onCategory,
@@ -387,25 +403,34 @@ function World({
   cameraRevision,
   paused,
 }) {
+  const visibleCategories = spatialState.service ? [] : categories.filter((category) => !spatialState.category || category.slug === spatialState.category)
+  const visibleServices = services.filter((service) => spatialState.service ? service.slug === spatialState.service : !spatialState.category || service.category === spatialState.category)
   return (
     <>
-      <color attach="background" args={[theme === 'dark' ? '#071013' : '#edf2ef']} />
-      <fog attach="fog" args={[theme === 'dark' ? '#071013' : '#edf2ef', 16, 34]} />
+      <color attach="background" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4']} />
+      <fog attach="fog" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4', 42, 78]} />
       <hemisphereLight
-        intensity={theme === 'dark' ? 0.82 : 1.35}
+        intensity={theme === 'dark' ? 1.65 : 1.8}
         color={theme === 'dark' ? '#c8e7e3' : '#ffffff'}
         groundColor={theme === 'dark' ? '#10262b' : '#9b8e79'}
       />
       <directionalLight
         position={[7, 13, 8]}
-        intensity={theme === 'dark' ? 2.1 : 2.8}
+        intensity={theme === 'dark' ? 2.8 : 2.4}
         color="#fff3dc"
         castShadow={quality === 'high'}
+        shadow-camera-left={-16}
+        shadow-camera-right={16}
+        shadow-camera-top={16}
+        shadow-camera-bottom={-16}
+        shadow-normalBias={0.035}
         shadow-mapSize={[quality === 'high' ? 1024 : 512, quality === 'high' ? 1024 : 512]}
       />
       <pointLight position={[-10, 5, -8]} intensity={1.2} color="#6db9ae" distance={20} />
       <pointLight position={[10, 4, 6]} intensity={0.9} color="#c29aaa" distance={18} />
 
+      <StudioEnvironment />
+      <directionalLight position={[-8, 7, -4]} intensity={1.8} color="#bddfff" />
       <Grid
         position={[0, -0.6, 0]}
         args={[36, 36]}
@@ -420,9 +445,9 @@ function World({
         infiniteGrid
       />
 
-      <Bridges theme={theme} />
-      <GroundShadows theme={theme} />
-      {categories.map((category) => (
+      {!spatialState.category && <Bridges theme={theme} />}
+      <GroundShadows theme={theme} visibleServices={visibleServices} />
+      {visibleCategories.map((category) => (
         <Region
           key={category.slug}
           category={category}
@@ -431,7 +456,7 @@ function World({
           theme={theme}
         />
       ))}
-      {services.map((service) => (
+      {visibleServices.map((service) => (
         <ServiceNode
           key={service.slug}
           service={service}
@@ -514,7 +539,6 @@ export default function SpatialScene({
   useEffect(
     () => () => {
       document.body.style.cursor = ''
-      disposeExtrudedIconGeometryCache()
     },
     [],
   )
@@ -531,7 +555,8 @@ export default function SpatialScene({
       data-quality-tier={quality}
     >
       <Canvas
-        camera={{ position: overviewCamera.position, fov: mobile ? 52 : 43, near: 0.1, far: 80 }}
+        orthographic
+        camera={{ position: overviewCamera.position, zoom: 32, near: 0.1, far: 100 }}
         dpr={dpr}
         frameloop={visible && inViewport ? 'demand' : 'never'}
         shadows={quality === 'high'}
@@ -558,19 +583,21 @@ export default function SpatialScene({
           onDegrade={degradeQuality}
           onFallback={fallbackForPerformance}
         />
-        <World
-          spatialState={spatialState}
-          onCategory={onCategory}
-          onService={onService}
-          hoveredService={hoveredService}
-          theme={theme}
-          reducedMotion={reducedMotion}
-          quality={quality}
-          mobile={mobile}
-          cameraRevision={cameraRevision}
-          paused={paused}
-        />
-        <GeometryAudit revision={`${spatialState.service || 'overview'}:${quality}`} />
+        <Suspense fallback={<Html center><div className="scene-model-loading">正在加载服务模型…</div></Html>}>
+          <World
+            spatialState={spatialState}
+            onCategory={onCategory}
+            onService={onService}
+            hoveredService={hoveredService}
+            theme={theme}
+            reducedMotion={reducedMotion}
+            quality={quality}
+            mobile={mobile}
+            cameraRevision={cameraRevision}
+            paused={paused}
+          />
+          <GeometryAudit revision={`${spatialState.service || 'overview'}:${quality}`} />
+        </Suspense>
       </Canvas>
       <div className="scene-quality" aria-hidden="true">
         {quality === 'high' ? 'HQ' : 'ECO'}
