@@ -1549,13 +1549,7 @@ button {
 }
 
 @media (max-width: 1100px) {
-  .mode-switch {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .mode-switch span,
+  /* 手机/平板保留「图标 + OJ 刷题」文字，不压成纯图标 */
   .brand__copy {
     display: none;
   }
@@ -1820,6 +1814,12 @@ button {
   .search-console {
     min-width: 0;
     padding-left: 10px;
+  }
+
+  /* 极窄屏下「OJ 刷题」文字按钮收紧内边距，避免命令栏溢出 */
+  .mode-switch {
+    padding: 0 8px;
+    gap: 5px;
   }
 
   .command-actions .help-button {
