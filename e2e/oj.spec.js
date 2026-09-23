@@ -1,75 +1,53 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { ojs } from '../src/oj/OjData'
-import { ojResourceCount } from '../src/data/ojResources'
 
-test('经典主站可切换到内置 OJ 导航且外链保持安全', async ({ page }) => {
+test('两栏目位置始终清楚且浏览器后退恢复服务页', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }).click()
-
-  await expect(page).toHaveURL(/namespace=oj/)
-  await expect(page.getByTestId('service-card')).toHaveCount(ojResourceCount)
-  await expect(page.locator('a[href*="bilibili.com"]')).toHaveCount(0)
-  const directLinks = page.locator('#service-directory a[data-direct-service]')
-  await expect(directLinks).toHaveCount(ojResourceCount)
-  expect(
-    await directLinks.evaluateAll((links) =>
-      links.every(
-        (link) =>
-          link.target === '_blank' &&
-          ['noopener', 'noreferrer', 'nofollow'].every((token) =>
-            link.relList.contains(token),
-          ),
-      ),
-    ),
-  ).toBe(true)
+  const nav = page.getByRole('navigation', { name: '导航栏目' })
+  await expect(nav.getByRole('link', { name: '服务导航' })).toHaveAttribute('aria-current', 'page')
+  await nav.getByRole('link', { name: '刷题导航' }).click()
+  await expect(page).toHaveURL(/\/oj\/$/)
+  await expect(page).toHaveTitle('刷题导航 · E时代导航')
+  await expect(nav.getByRole('link', { name: '刷题导航' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('article')).toHaveCount(ojs.length)
+  await expect(page.getByRole('group', { name: '服务展示方式' })).toHaveCount(0)
+  await page.goBack()
+  await expect(nav.getByRole('link', { name: '服务导航' })).toHaveAttribute('aria-current', 'page')
+  await expect(page).toHaveTitle('服务导航 · E时代导航')
+  await expect(page.getByText(/已切换到 OJ/)).toHaveCount(0)
 })
 
-test('刷题导航可访问、可筛选且没有严重无障碍问题', async ({ page }) => {
+test('旧书签进入唯一刷题页并定位原资源', async ({ page }) => {
+  await page.goto('/?namespace=oj&category=oj-contest&service=leetcode-cn')
+  await expect(page).toHaveURL(/\/oj\/\?category=platform&service=leetcode$/)
+  await expect(page.getByRole('link', { name: '访问 力扣 LeetCode' })).toBeFocused()
+  await expect(page.getByRole('link', { name: '访问 力扣 LeetCode' })).toHaveAttribute('href', 'https://leetcode.cn/')
+  await page.reload()
+  await expect(page.getByRole('button', { name: /刷题平台/ })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('刷题搜索筛选可恢复，窄屏导航文字可见且通过无障碍审计', async ({ page }) => {
   await page.goto('/oj/')
-
-  await expect(
-    page.getByRole('heading', { level: 1, name: /让每一次\s*刷题都更高效/ }),
-  ).toBeVisible()
-  await expect(page.getByRole('link', { name: '返回主站导航' })).toBeVisible()
-  await expect(page.getByRole('article')).toHaveCount(ojs.length)
-  await expect(page.locator('.oj-card').last()).toHaveCSS('opacity', '1')
-  await expect(page.locator('.oj-reveal__line').first()).toHaveCSS('opacity', '1')
-  await expect(page.locator('.oj-tip__video')).toHaveCount(0)
-  await expect(page.locator('a[href*="bilibili.com"]')).toHaveCount(0)
-  const externalRelValues = await page
-    .locator('a[href^="http://"], a[href^="https://"]')
-    .evaluateAll((links) => links.map((link) => link.rel.split(/\s+/).filter(Boolean)))
-  expect(externalRelValues.length).toBeGreaterThan(0)
-  externalRelValues.forEach((tokens) => {
-    expect(tokens).toEqual(expect.arrayContaining(['noopener', 'noreferrer', 'nofollow']))
-  })
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
-  ).toBeLessThanOrEqual(1)
-
-  const accessibility = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
-    .analyze()
+  await expect(page.getByRole('heading', { level: 1, name: '刷题导航' })).toBeVisible()
+  const navigation = page.getByRole('navigation', { name: '导航栏目' })
+  await expect(navigation.getByRole('link', { name: '服务导航' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: '刷题导航' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1)
+  const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa']).analyze()
   expect(accessibility.violations).toEqual([])
-
   await page.getByRole('searchbox', { name: '搜索刷题平台' }).fill('Codeforces')
   await expect(page.getByRole('article')).toHaveCount(1)
-  await expect(page.getByRole('link', { name: '访问 Codeforces' })).toHaveAttribute(
-    'href',
-    'https://codeforces.com/',
-  )
-
+  await page.reload()
+  await expect(page.getByRole('searchbox', { name: '搜索刷题平台' })).toHaveValue('Codeforces')
+  await expect(page.getByRole('article')).toHaveCount(1)
+  await page.getByRole('button', { name: '清除搜索' }).click()
+  await page.getByRole('button', { name: /基础学习/ }).click()
+  await expect(page.getByRole('article')).toHaveCount(7)
+  await page.getByRole('button', { name: /竞赛资源/ }).click()
+  await page.goBack()
+  await expect(page.getByRole('button', { name: /基础学习/ })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '切换到深色主题' }).click()
+  await navigation.getByRole('link', { name: '服务导航' }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-
-  await page.getByRole('link', { name: '返回主站导航' }).click()
-  await expect(page.getByRole('button', { name: '返回导航首页' })).toBeVisible()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect(
-    page.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }),
-  ).toBeVisible()
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
-  ).toBeLessThanOrEqual(1)
 })

@@ -1,55 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import {
-  ojCategories,
-  ojResourceCount,
-  ojServiceBySlug,
-  ojServices,
-  ojServicesByCategory,
-} from './ojResources'
-import { ALL_ICON_DEFINITIONS, getServiceIconConfig } from '../icons/originalIconRegistry'
-import { OJ_ICON_REGISTRY } from '../icons/ojIconRegistry'
-import { isSafeExternalUrl } from '../lib/navigation'
+import { ojCategories, ojResourceCount, ojServices, ojServicesByCategory } from './ojResources'
+import { ojs } from '../oj/OjData'
 
-describe('OJ 副导航资源目录', () => {
-  it('按五大分类组织且资源数量自洽', () => {
-    expect(ojCategories).toHaveLength(5)
-    expect(ojServices).toHaveLength(ojResourceCount)
-    expect(
-      ojCategories.map((category) => ojServicesByCategory[category.slug].length),
-    ).toEqual([1, 3, 6, 6, 3])
-    const total = ojCategories.reduce(
-      (sum, category) => sum + ojServicesByCategory[category.slug].length,
-      0,
-    )
-    expect(total).toBe(ojResourceCount)
+describe('统一刷题资源目录', () => {
+  it('从唯一内容源派生分类，保留两份旧目录的全部目标', () => {
+    expect(ojResourceCount).toBe(28)
+    expect(ojServices.map(item => item.url)).toEqual(ojs.map(item => item.url))
+    expect(ojCategories.map(category => ojServicesByCategory[category.slug].length)).toEqual([7, 8, 9, 3, 1])
+    expect(new Set(ojs.map(item => item.slug)).size).toBe(ojs.length)
+    expect(new Set(ojs.map(item => new URL(item.url).href)).size).toBe(ojs.length)
+    for (const slug of ['emoera-portal', 'xcpcio', 'yuantiji', 'c16h22o4']) expect(ojs.some(item => item.slug === slug)).toBe(true)
   })
-
-  it('使用唯一稳定 slug 且全部为 HTTPS 合法条目', () => {
-    expect(new Set(ojServices.map((service) => service.slug)).size).toBe(ojResourceCount)
-    ojServices.forEach((service) => {
-      expect(service.url).toMatch(/^https:\/\//)
-      expect(service.name).toBeTruthy()
-      expect(service.description).toBeTruthy()
-      expect(service.position).toHaveLength(3)
-      expect(ojCategories.some((category) => category.slug === service.category)).toBe(true)
-      expect(ojServiceBySlug[service.slug]).toBeDefined()
+  it('保留原有 HTTP 例外，不添加脚本地址', () => {
+    expect(ojs.find(item => item.slug === 'poj').url).toBe('http://poj.org/')
+    expect(ojs.filter(item => !item.url.startsWith('https://')).map(item => item.slug)).toEqual(['poj'])
+    ojs.forEach(item => {
+      expect(['https:', 'http:']).toContain(new URL(item.url).protocol)
+      expect(item.name).toBeTruthy()
+      expect(item.description).toBeTruthy()
+      expect(ojCategories.some(category => category.slug === item.category)).toBe(true)
     })
-  })
-
-  it('每条资源都有可解析的图标与服务配置', () => {
-    ojServices.forEach((service) => {
-      // 卡片用 slug 查注册表；图标用 service.icon 渲染本地矢量。
-      expect(getServiceIconConfig(service.slug)).not.toBeNull()
-      expect(ALL_ICON_DEFINITIONS[service.icon]).toBeDefined()
-    })
-    expect(Object.keys(OJ_ICON_REGISTRY)).toHaveLength(ojResourceCount)
-    expect(ojServices.some((service) => service.url.includes('bilibili.com'))).toBe(false)
-  })
-
-  it('外链白名单能识别副导航目标地址', () => {
-    expect(isSafeExternalUrl(ojServiceBySlug.codeforces.url, 'oj')).toBe(true)
-    expect(isSafeExternalUrl(ojServiceBySlug.luogu.url, 'oj')).toBe(true)
-    // 主导航的白名单不应放行 OJ 地址（命名空间隔离）。
-    expect(isSafeExternalUrl(ojServiceBySlug.codeforces.url, 'main')).toBe(false)
   })
 })
