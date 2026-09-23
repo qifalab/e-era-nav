@@ -85,7 +85,9 @@ export default function OjApp() {
         <nav className="catalog-filters practice-filters" aria-label="刷题资源分类">
           {categories.map(category => (
             <button type="button" key={category.id} aria-pressed={state.category === category.id}
+              style={{ '--category-color': category.accent }}
               onClick={() => navigate({ category: category.id, query, service: null })}>
+              {category.id !== 'all' && <span className="category-dot" aria-hidden="true" />}
               {category.name}<small>{category.id === 'all' ? ojs.length : ojs.filter(item => item.category === category.id).length}</small>
             </button>
           ))}
@@ -95,7 +97,7 @@ export default function OjApp() {
           {filtered.length ? <div className="catalog-grid">
             {filtered.map(item => {
               const Icon = icons[item.category]
-              return <article key={item.slug} id={`resource-${item.slug}`} className={`catalog-card ${state.service === item.slug ? 'is-selected' : ''}`}>
+              return <article key={item.slug} id={`resource-${item.slug}`} style={{ '--card-color': item.accent }} className={`catalog-card ${state.service === item.slug ? 'is-selected' : ''}`}>
                 <a ref={state.service === item.slug ? targetRef : undefined} href={item.url} target="_blank" rel="noopener noreferrer nofollow" aria-label={`访问 ${item.name}`}>
                   <div className="catalog-card__head"><span className="catalog-card__icon"><Icon aria-hidden="true" /></span><h3>{item.name}</h3></div>
                   <p className="catalog-card__description">{item.description}</p>

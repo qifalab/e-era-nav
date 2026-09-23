@@ -1,12 +1,19 @@
 /* Layout for the service column; brand, search and cards share SiteShell tokens. */
-.service-page { min-height: 100vh; }
+.service-page { min-height: 100vh; background: radial-gradient(ellipse 700px 420px at 76% 260px,color-mix(in srgb,#79c9bd var(--color-wash),transparent),transparent),radial-gradient(ellipse 520px 370px at 93% 440px,color-mix(in srgb,#c7a2c0 var(--color-wash),transparent),transparent),radial-gradient(ellipse 450px 320px at 20% 180px,color-mix(in srgb,#e9bd72 7%,transparent),transparent),var(--page-bg); }
+.service-hero.has-scene { display: grid; grid-template-columns: minmax(280px,.9fr) minmax(0,1.7fr); align-items: center; gap: 20px; margin: -20px 0 18px; }
+.service-hero.has-scene .page-intro { position: relative; z-index: 10; flex-direction: column; align-items: stretch; gap: 28px; margin: 0; padding: 20px 0; }
+.service-hero.has-scene .page-intro h1 { font-size: clamp(34px,3.5vw,46px); letter-spacing: -1.5px; margin-bottom: 14px; }
+.service-hero.has-scene .catalog-search { width: 100%; box-shadow: var(--shadow-sm); }
 .service-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .view-switch { display: flex; flex-shrink: 0; gap: 3px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .view-switch button { display: flex; align-items: center; gap: 7px; border: 0; border-radius: 7px; background: transparent; color: var(--ink-muted); padding: 7px 11px; min-height: 36px; font-size: 14px; }
 .view-switch button[aria-pressed='true'] { background: var(--surface-soft); color: var(--ink); font-weight: 650; }
 .view-switch svg { width: 16px; height: 16px; }
-.spatial-stage { position: relative; height: clamp(260px,32vh,330px); border: 1px solid var(--border); border-radius: 15px; overflow: hidden; margin: 0 0 24px; isolation: isolate; background: var(--canvas-bg); }
-.scene-tools { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; pointer-events: none; font-size: 12px; color: var(--ink-muted); }
+.spatial-stage { position: relative; height: clamp(380px,46vh,460px); min-width: 0; overflow: hidden; isolation: isolate; background: transparent; }
+/* Fade only the canvas perimeter; labels and controls stay sharp and clickable. */
+.spatial-stage .scene-canvas canvas { -webkit-mask-image: linear-gradient(to bottom,transparent,#000 6%,#000 94%,transparent),linear-gradient(to right,transparent,#000 4%,#000 96%,transparent); mask-image: linear-gradient(to bottom,transparent,#000 6%,#000 94%,transparent),linear-gradient(to right,transparent,#000 4%,#000 96%,transparent); -webkit-mask-composite: source-in; mask-composite: intersect; }
+.scene-tools { position: absolute; left: 14px; right: 14px; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 16px; pointer-events: none; font-size: 12px; color: var(--ink-muted); }
+.scene-hint-mobile { display: none; }
 .scene-tools button { pointer-events: auto; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; background: var(--surface); color: var(--ink); font-size: 12px; }
 .scene-quality { top: 10px; bottom: auto; right: 14px; }
 .scene-region-label { min-width: 105px; padding: 6px 9px; }
@@ -47,12 +54,23 @@
 .shortcut-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
 .shortcut-list dd,.shortcut-list dt { font-size: 12px; }
 /* CameraControls writes touch-action inline; mobile single-finger gestures must still scroll. */
-@media(max-width:720px) { .scene-canvas, .scene-canvas div, .scene-canvas canvas { touch-action: pan-y !important; } }
+@media(max-width:960px) {
+  .service-hero.has-scene { grid-template-columns: 1fr; gap: 0; margin: 0 0 22px; }
+  .service-hero.has-scene .page-intro { padding: 0; gap: 20px; }
+  .service-hero.has-scene .page-intro h1 { font-size: 34px; }
+  .spatial-stage { height: 360px; }
+}
+@media(max-width:720px) {
+  .scene-canvas, .scene-canvas div, .scene-canvas canvas { touch-action: pan-y !important; }
+  .scene-hint-desktop { display: none; }
+  .scene-hint-mobile { display: inline; }
+}
 @media(max-width:640px) {
   .view-switch button { min-height: 40px; }
   .service-toolbar { gap: 12px; }
-  .spatial-stage { height: 300px; }
-  .scene-tools > span { max-width: 65%; }
+  .spatial-stage { height: 330px; }
+  .scene-tools { left: 0; right: 0; gap: 8px; font-size: 11px; }
+  .scene-tools > span { max-width: 70%; }
   .service-detail dl { grid-template-columns: 1fr; }
   .modal__surface { padding: 18px; }
   .search-results { left: -1px; right: -1px; }

@@ -31,6 +31,11 @@ function FrameBudgetMonitor({ quality, onDegrade, onFallback }) {
   const sample = useRef({ frames: 0, elapsed: 0, slowWindows: 0 })
 
   useFrame((_, delta) => {
+    // Demand rendering sleeps between interactions; idle time is not a slow GPU frame.
+    if (delta > 0.25) {
+      sample.current = { frames: 0, elapsed: 0, slowWindows: 0 }
+      return
+    }
     const frameDelta = Math.min(delta, 0.2)
     sample.current.frames += 1
     sample.current.elapsed += frameDelta
@@ -155,7 +160,7 @@ function CameraRig({ spatialState, reducedMotion, mobile, cameraRevision, paused
       makeDefault
       smoothTime={reducedMotion ? 0.01 : 0.38}
       draggingSmoothTime={0.08}
-      minZoom={15}
+      minZoom={8}
       maxZoom={210}
       minDistance={3}
       maxDistance={25}
@@ -408,7 +413,7 @@ function World({
   const visibleServices = services.filter((service) => spatialState.service ? service.slug === spatialState.service : !spatialState.category || service.category === spatialState.category)
   return (
     <>
-      <fog attach="fog" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4', 42, 78]} />
+      <fog attach="fog" args={[theme === 'dark' ? '#101617' : '#f5f7f7', 42, 78]} />
       <hemisphereLight
         intensity={theme === 'dark' ? .95 : .85}
         color={theme === 'dark' ? '#c8e7e3' : '#ffffff'}
@@ -436,12 +441,12 @@ function World({
         args={[36, 36]}
         cellSize={0.6}
         cellThickness={0.35}
-        cellColor={theme === 'dark' ? '#294047' : '#aebdb8'}
+        cellColor={theme === 'dark' ? '#253533' : '#c7d4ce'}
         sectionSize={3}
-        sectionThickness={0.72}
-        sectionColor={theme === 'dark' ? '#416069' : '#839992'}
-        fadeDistance={27}
-        fadeStrength={1.4}
+        sectionThickness={0.5}
+        sectionColor={theme === 'dark' ? '#3a5550' : '#afc4ba'}
+        fadeDistance={22}
+        fadeStrength={2.5}
         infiniteGrid
       />
 
@@ -576,6 +581,8 @@ export default function SpatialScene({
           powerPreference: quality === 'low' ? 'low-power' : 'high-performance',
         }}
         onCreated={({ gl }) => {
+          // Let the page's soft color fields show through the WebGL background.
+          gl.setClearColor(0x000000, 0)
           gl.domElement.addEventListener(
             'webglcontextlost',
             (event) => {
@@ -588,7 +595,6 @@ export default function SpatialScene({
         }}
         onPointerMissed={() => onCategory(null)}
       >
-        <color attach="background" args={[theme === 'dark' ? '#121a1d' : '#e8f1f4']} />
         <Suspense fallback={null}>
           <FrameBudgetMonitor
             quality={quality}
