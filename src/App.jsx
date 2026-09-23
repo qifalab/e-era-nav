@@ -1,39 +1,29 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion as Motion } from 'framer-motion'
 import {
   Box,
   ChevronRight,
-  Compass,
   Megaphone,
   Monitor,
-  Moon,
-  Network,
   Search,
-  Sun,
   WifiOff,
   X,
 } from 'lucide-react'
 import './SpatialApp.css'
+import SiteHeader from './components/SiteHeader'
+import SiteFooter from './components/SiteFooter'
+import './ServicePage.css'
 import Directory from './components/Directory'
 import Modal from './components/Modal'
 import SceneErrorBoundary from './components/SceneErrorBoundary'
 import sculptureUrl from './assets/navigation-sculptures.glb?url'
 import ServiceCardFace from './components/ServiceCardFace'
-import {
-  ojCategories,
-  ojResourceCount,
-  ojServiceBySlug,
-  ojServicesByCategory,
-} from './data/ojResources'
 import { ANNOUNCEMENT } from './data/announcement'
 import { categories, categoryBySlug, serviceBySlug, services } from './data/services'
 import { detectCapabilities } from './lib/capabilities'
 import {
   buildLocation,
   createSpatialState,
-  getCategoryBySlug,
   isSafeExternalUrl,
-  NAMESPACES,
   parseLocation,
   spatialParent,
 } from './lib/navigation'
@@ -106,9 +96,7 @@ function App() {
     if (stored === 'light' || stored === 'dark') return stored
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
-  const isOjMode = spatialState.namespace === NAMESPACES.OJ
   const [renderMode, setRenderMode] = useState(() => {
-    if (initialState.namespace === NAMESPACES.OJ) return '2d'
     if (compactViewport) return '2d'
     const stored = getStoredValue(preferenceKeys.renderMode)
     if (stored === '2d') return '2d'
@@ -116,9 +104,7 @@ function App() {
     return capabilities.recommendedMode
   })
   const [modeNotice, setModeNotice] = useState(() =>
-    initialState.namespace === NAMESPACES.OJ
-      ? '副导航 OJ 刷题资源始终使用 2D 列表呈现。'
-      : capabilities.recommendedMode === '2d'
+    capabilities.recommendedMode === '2d'
         ? '已根据设备能力启用轻量 2D 模式。'
         : compactViewport
           ? '已根据小屏触控条件启用轻量 2D 模式。'
@@ -126,7 +112,6 @@ function App() {
   )
   const [recent, setRecent] = useState(() => getStoredArray(preferenceKeys.recent))
   const [query, setQuery] = useState('')
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [activeSearchIndex, setActiveSearchIndex] = useState(0)
   const [helpOpen, setHelpOpen] = useState(false)
   const [helpTab, setHelpTab] = useState('guide')
@@ -140,15 +125,10 @@ function App() {
   const helpWasOpenedRef = useRef(false)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
-  // Per-namespace lookup tables so the rest of the App stays schema-agnostic.
-  const activeServiceBySlug = isOjMode ? ojServiceBySlug : serviceBySlug
-  const activeCategoryBySlug = isOjMode
-    ? getCategoryBySlug(NAMESPACES.OJ)
-    : categoryBySlug
-  const activeServices = isOjMode
-    ? ojCategories.flatMap((category) => ojServicesByCategory[category.slug])
-    : services
-  const activeCategories = isOjMode ? ojCategories : categories
+  const activeServiceBySlug = serviceBySlug
+  const activeCategoryBySlug = categoryBySlug
+  const activeServices = services
+  const activeCategories = categories
 
   const selectedService = activeServiceBySlug[spatialState.service] || null
   const selectedCategory = activeCategoryBySlug[spatialState.category] || null
@@ -243,15 +223,8 @@ function App() {
       navigateSpatial(
         createSpatialState(slug, null, spatialState.namespace),
       )
-      if (isOjMode || renderMode === '2d') {
-        window.requestAnimationFrame(() => {
-          document
-            .getElementById(`region-${slug}`)
-            ?.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' })
-        })
-      }
     },
-    [navigateSpatial, reducedMotion, renderMode, isOjMode, spatialState.namespace],
+    [navigateSpatial, spatialState.namespace],
   )
 
   const focusService = useCallback(
@@ -259,7 +232,6 @@ function App() {
       const service = activeServiceBySlug[slug]
       if (!service) return
       setQuery('')
-      setMobileSearchOpen(false)
       navigateSpatial(
         createSpatialState(service.category, service.slug, spatialState.namespace),
       )
@@ -274,28 +246,6 @@ function App() {
     },
     [navigateSpatial, spatialState.namespace],
   )
-
-  const switchNamespace = useCallback(
-    (nextNamespace) => {
-      const target = nextNamespace === NAMESPACES.OJ ? NAMESPACES.OJ : NAMESPACES.MAIN
-      const targetState = createSpatialState(null, null, target)
-      setSpatialState(targetState)
-      setQuery('')
-      setMobileSearchOpen(false)
-      setHelpOpen(false)
-      if (target === NAMESPACES.OJ) {
-        setModeNotice('已切换到 OJ 副导航，仅展示 2D 资源列表。')
-      } else {
-        setModeNotice('已返回 E时代社团服务导航。')
-      }
-      window.history.pushState({ eraSpatial: targetState }, '', buildLocation(targetState))
-    },
-    [],
-  )
-
-  const toggleNamespace = useCallback(() => {
-    switchNamespace(isOjMode ? NAMESPACES.MAIN : NAMESPACES.OJ)
-  }, [isOjMode, switchNamespace])
 
   const toggleThemeRipple = useCallback(() => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark'
@@ -344,10 +294,13 @@ function App() {
   }, [navigateSpatial, spatialState])
 
   useEffect(() => {
-    window.history.replaceState({ eraSpatial: spatialState }, '', buildLocation(spatialState))
+    document.title = '服务导航 · E时代导航'
+    window.history.replaceState({ ...window.history.state, eraSpatial: spatialState }, '', buildLocation(spatialState))
     const handlePopState = () => {
       setHelpOpen(false)
       setSpatialState(parseLocation(window.location.search))
+      setQuery('')
+      setModeNotice('')
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -390,12 +343,8 @@ function App() {
 
       if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
-        if (compactViewport) {
-          setMobileSearchOpen(true)
-          window.requestAnimationFrame(() => searchRef.current?.focus())
-        } else {
-          searchRef.current?.focus()
-        }
+        searchRef.current?.focus()
+        searchRef.current?.scrollIntoView({ block: 'center' })
       } else if (event.altKey && event.key.toLowerCase() === 'h') {
         goHome()
       } else if (event.altKey && event.key.toLowerCase() === 'b') {
@@ -403,21 +352,14 @@ function App() {
       } else if (event.altKey && event.key === '?') {
         openInfoPanel('guide')
       } else if (event.altKey && event.key.toLowerCase() === 'o') {
-        toggleNamespace()
+        window.location.assign('/oj/')
       } else if (
         event.altKey &&
         ['1', '2', '3', '4'].includes(event.key) &&
-        !isOjMode &&
         activeCategories[Number(event.key) - 1]
       ) {
         focusCategory(activeCategories[Number(event.key) - 1].slug)
-      } else if (
-        event.altKey &&
-        ['1', '2', '3', '4', '5'].includes(event.key) &&
-        isOjMode &&
-        activeCategories[Number(event.key) - 1]
-      ) {
-        focusCategory(activeCategories[Number(event.key) - 1].slug)
+
       }
     }
 
@@ -425,18 +367,14 @@ function App() {
     return () => window.removeEventListener('keydown', handleShortcut)
   }, [
     activeCategories,
-    compactViewport,
     focusCategory,
     goBack,
     goHome,
-    isOjMode,
     modalOpen,
     openInfoPanel,
-    toggleNamespace,
   ])
 
   const switchRenderMode = () => {
-    if (isOjMode) return
     if (renderMode === '2d') {
       if (!capabilities.webgl) {
         setModeNotice('此设备无法建立 WebGL 上下文，继续使用 2D 服务列表。')
@@ -468,74 +406,17 @@ function App() {
   }
 
   return (
-    <div className={`app-shell ${isOjMode ? 'app-shell--oj' : ''}`}>
-      <a className="skip-link" href="#service-directory">
-        跳到可访问服务目录
-      </a>
-
-      <header
-        className={`command-bar ${mobileSearchOpen ? 'is-search-open' : ''} ${
-          isOjMode ? 'command-bar--oj' : ''
-        }`}
-      >
-        <div className="brand-context">
-          <button
-            type="button"
-            className="brand"
-            onClick={goHome}
-            aria-label={isOjMode ? '返回 OJ 导航首页' : '返回导航首页'}
-          >
-          <picture className="brand__mark">
-            <source
-              type="image/webp"
-              srcSet="/brand/e-era-logo-96.webp 1x, /brand/e-era-logo-192.webp 2x"
-            />
-            <img
-              src="/brand/e-era-logo-96.png"
-              srcSet="/brand/e-era-logo-96.png 1x, /brand/e-era-logo-192.png 2x"
-              width="38"
-              height="38"
-              alt="E时代品牌标识"
-            />
-          </picture>
-          <span className="brand__copy">
-            <strong>
-              {isOjMode ? 'E时代 OJ 刷题导航' : 'E时代社团服务导航'}
-            </strong>
-            <small>{isOjMode ? 'XCPC · 算法 · 软件开发' : '科技创新，连接未来'}</small>
-          </span>
-          </button>
-          <BreadcrumbTrail
-            category={selectedCategory}
-            service={selectedService}
-            onHome={goHome}
-            onCategory={focusCategory}
-            className="breadcrumbs--desktop"
-          />
-        </div>
-
-        <button
-          type="button"
-          className="mobile-search-trigger"
-          onClick={() => {
-            const nextOpen = !mobileSearchOpen
-            setMobileSearchOpen(nextOpen)
-            if (nextOpen) {
-              window.requestAnimationFrame(() => searchRef.current?.focus())
-            } else {
-              setQuery('')
-              searchRef.current?.blur()
-            }
-          }}
-          aria-label={mobileSearchOpen ? '关闭搜索' : '打开搜索'}
-          aria-expanded={mobileSearchOpen}
-          aria-controls="global-search"
-        >
-          {mobileSearchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+    <div className="app-shell service-page">
+      <a className="skip-link" href="#service-directory">跳到可访问服务目录</a>
+      <SiteHeader section="services" theme={theme} onTheme={toggleThemeRipple} themeRef={themeButtonRef}>
+        <button ref={helpTriggerRef} type="button" className="icon-button help-button" onClick={() => openInfoPanel('announcement')} aria-label="公告">
+          <Megaphone aria-hidden="true" />
         </button>
-
-        <div className={`command-center ${mobileSearchOpen ? 'is-mobile-open' : ''}`}>
-        <div className="search-console" id="global-search">
+      </SiteHeader>
+      <main className="site-main">
+        <div className="page-intro">
+          <div><h1 id="hero-title">服务导航</h1><p>社团产品、成员作品与团队入口</p></div>
+        <div className="catalog-search search-console" id="global-search">
           <Search aria-hidden="true" />
           <input
             ref={searchRef}
@@ -562,16 +443,11 @@ function App() {
               }
               if (event.key === 'Escape') {
                 setQuery('')
-                setMobileSearchOpen(false)
                 event.currentTarget.blur()
               }
             }}
-            placeholder={
-              isOjMode
-                ? `搜索 ${ojResourceCount} 个 OJ / 刷题资源…`
-                : `搜索 ${services.length} 个服务…`
-            }
-            aria-label={isOjMode ? '搜索 OJ 资源' : '搜索服务'}
+            placeholder="搜索社团服务…"
+            aria-label="搜索服务"
             role="combobox"
             aria-expanded={searchResults.length > 0}
             aria-controls="search-results"
@@ -612,270 +488,51 @@ function App() {
           )}
           {query && searchResults.length === 0 && (
             <div className="search-results search-empty" role="status">
-              {isOjMode ? '没有匹配的资源' : '没有匹配的服务'}
+              没有匹配的服务
             </div>
           )}
         </div>
         </div>
-
-        <div className="command-actions">
-          <button
-            type="button"
-            className={`mode-switch ${isOjMode ? 'is-oj' : ''}`}
-            onClick={toggleNamespace}
-            aria-label={
-              isOjMode
-                ? '切换到主导航：E时代社团服务'
-                : '切换到副导航：OJ 刷题资源'
-            }
-            data-namespace={isOjMode ? 'main' : 'oj'}
-          >
-            {isOjMode ? <Network aria-hidden="true" /> : <Compass aria-hidden="true" />}
-            <span>{isOjMode ? '主导航' : 'OJ 刷题'}</span>
-          </button>
-          <button
-            type="button"
-            className="mode-switch mode-switch--render"
-            onClick={switchRenderMode}
-            disabled={isOjMode}
-            aria-label={
-              isOjMode
-                ? '副导航固定为 2D 列表'
-                : `切换到${renderMode === '3d' ? '2D' : '3D'}模式`
-            }
-          >
-            {renderMode === '3d' ? <Box aria-hidden="true" /> : <Monitor aria-hidden="true" />}
-            <span>
-              {isOjMode
-                ? '2D 列表'
-                : renderMode === '3d'
-                  ? '3D 图标'
-                  : '2D 列表'}
-            </span>
-          </button>
-          <button
-            ref={themeButtonRef}
-            type="button"
-            className="icon-button theme-button"
-            onClick={toggleThemeRipple}
-            aria-label={`切换到${theme === 'dark' ? '浅色' : '深色'}主题`}
-          >
-            {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-          </button>
-          <button
-            ref={helpTriggerRef}
-            type="button"
-            className="icon-button help-button"
-            onClick={() => openInfoPanel('announcement')}
-            aria-label="公告"
-          >
-            <Megaphone aria-hidden="true" />
-          </button>
+        <div className="service-toolbar">
+          <nav className="catalog-filters region-legend" aria-label="服务分类">
+            <button type="button" aria-pressed={!spatialState.category} onClick={goHome}>全部 <small>{services.length}</small></button>
+            {categories.map(category => (
+              <button type="button" key={category.slug} aria-pressed={spatialState.category === category.slug}
+                onClick={() => focusCategory(category.slug)}>
+                {category.shortName}
+              </button>
+            ))}
+          </nav>
+          <div className="view-switch" role="group" aria-label="服务展示方式">
+            <button type="button" aria-label="切换到3D模式" aria-pressed={renderMode === '3d'}
+              onClick={() => renderMode !== '3d' && switchRenderMode()}><Box aria-hidden="true" />3D</button>
+            <button type="button" aria-label="切换到2D模式" aria-pressed={renderMode === '2d'}
+              onClick={() => renderMode !== '2d' && switchRenderMode()}><Monitor aria-hidden="true" />列表</button>
+          </div>
         </div>
-      </header>
-      <BreadcrumbTrail
-        category={selectedCategory}
-        service={selectedService}
-        onHome={goHome}
-        onCategory={focusCategory}
-        className="breadcrumbs--mobile"
-      />
-
-      {!online && (
-        <div className="system-banner" role="status">
-          <WifiOff aria-hidden="true" />
-          当前离线。仍可浏览目录，但暂时无法打开外部服务。
-        </div>
-      )}
-      {modeNotice && (
-        <div className="system-banner system-banner--neutral" role="status">
-          {modeNotice}
-        </div>
-      )}
-
-      <main>
-        {isOjMode ? (
-          <section className="oj-hero" aria-labelledby="oj-hero-title">
-            <div className="oj-hero__backdrop" aria-hidden="true">
-              <span />
-              <span />
-              <span />
+        <BreadcrumbTrail category={selectedCategory} service={selectedService} onHome={goHome} onCategory={focusCategory} />
+        {!online && <div className="system-banner" role="status"><WifiOff aria-hidden="true" />当前离线，仍可浏览服务目录，恢复网络后可访问服务。</div>}
+        {modeNotice && <div className="system-banner system-banner--neutral" role="status">{modeNotice}</div>}
+        {renderMode === '3d' && (
+          <section className={`spatial-stage spatial-stage--3d ${spatialState.category ? 'is-focused' : ''}`} aria-label="3D 服务展示">
+            <SceneErrorBoundary onError={() => fallbackTo2d('3D 加载失败，已切换到服务列表。')} fallback={null}>
+              <link rel="preload" href={sculptureUrl} as="fetch" crossOrigin="anonymous" />
+              <Suspense fallback={<div className="scene-loading" role="status"><span />正在加载 3D 服务模型…</div>}>
+                <SpatialScene spatialState={spatialState} onCategory={focusCategory} onService={focusService}
+                  onFallback={fallbackTo2d} theme={theme} reducedMotion={reducedMotion} cameraRevision={cameraRevision}
+                  paused={modalOpen} performanceProfile={capabilities} />
+              </Suspense>
+            </SceneErrorBoundary>
+            <div className="scene-tools">
+              <span>拖拽查看 · 点击图标了解服务</span>
+              <button type="button" onClick={goHome} aria-label="返回导航首页">重置视角</button>
             </div>
-            <Motion.div
-              className="oj-hero__copy"
-              initial={reducedMotion ? false : { opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reducedMotion ? 0.01 : 0.38, ease: [0.2, 0.8, 0.2, 1] }}
-            >
-              <p className="eyebrow">XCPC 竞赛 · 你应该了解的在线资源</p>
-              <h1 id="oj-hero-title">
-                <span>E时代 OJ</span>
-                <span>刷题资源导航</span>
-              </h1>
-              <p>
-                收录算法竞赛刷题站、基础学习教程、XCPC 资源拓展与软件开发站点，
-                全部按分类整理，方便随时取用。
-              </p>
-            </Motion.div>
-            {/* 移到 .oj-hero__copy 之外，使绝对定位相对整个 hero 容器；同时挪到右下角避开 h1（OJ hero 高度紧凑） */}
-            <a className="directory-jump" href="#service-directory">
-              直接浏览资源列表
-            </a>
-          </section>
-        ) : (
-          <section className={`spatial-stage spatial-stage--${renderMode} ${spatialState.category ? 'is-focused' : ''}`} aria-labelledby="hero-title">
-            {renderMode === '3d' ? (
-              <SceneErrorBoundary
-                onError={() => fallbackTo2d('3D 图标场景加载失败，已切换到 2D 服务列表。')}
-                fallback={null}
-              >
-                <link rel="preload" href={sculptureUrl} as="fetch" crossOrigin="anonymous" />
-                <Suspense
-                  fallback={
-                    <div className="scene-loading" role="status">
-                      <span />
-                      正在加载 3D 服务模型…
-                    </div>
-                  }
-                >
-                  <SpatialScene
-                    spatialState={spatialState}
-                    onCategory={focusCategory}
-                    onService={focusService}
-                    onFallback={fallbackTo2d}
-                    theme={theme}
-                    reducedMotion={reducedMotion}
-                    cameraRevision={cameraRevision}
-                    paused={modalOpen}
-                    performanceProfile={capabilities}
-                  />
-                </Suspense>
-              </SceneErrorBoundary>
-            ) : (
-              <div className="two-d-backdrop" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-            )}
-
-            <Motion.div
-              className="hero-copy"
-              initial={reducedMotion ? false : { opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reducedMotion ? 0.01 : 0.38, ease: [0.2, 0.8, 0.2, 1] }}
-            >
-              <picture className="hero-brand-mark">
-                <source
-                  type="image/webp"
-                  srcSet="/brand/e-era-logo-192.webp 1x, /brand/e-era-logo-512.webp 2x"
-                />
-                <img
-                  src="/brand/e-era-logo-192.png"
-                  srcSet="/brand/e-era-logo-192.png 1x, /brand/e-era-logo-512.png 2x"
-                  width="72"
-                  height="72"
-                  alt="E时代协会品牌标识"
-                />
-              </picture>
-              <p className="eyebrow">科技创新，连接未来</p>
-              <h1 id="hero-title">
-                <span>E时代社团</span>
-                <span>服务导航</span>
-              </h1>
-              <p>快速访问社团开发、通行证与团队服务。</p>
-            </Motion.div>
-
-            <nav className="region-legend" aria-label="服务分类">
-              {categories.map((category, index) => (
-                <button
-                  type="button"
-                  key={category.slug}
-                  className={spatialState.category === category.slug ? 'is-active' : ''}
-                  onClick={() => focusCategory(category.slug)}
-                  style={{ '--legend-accent': category.accent }}
-                >
-                  <span>0{index + 1}</span>
-                  <strong>{category.name}</strong>
-                  <small>{category.description}</small>
-                </button>
-              ))}
-            </nav>
-
-            {renderMode === '3d' && (
-              <div className="gesture-hint" aria-hidden="true">
-                <span>拖拽查看空间</span>
-                <span>滚轮缩放</span>
-                <span>点击图标查看详情</span>
-              </div>
-            )}
-            <a className="directory-jump" href="#service-directory">
-              浏览服务列表
-            </a>
           </section>
         )}
-
-        <Directory
-          namespace={isOjMode ? 'oj' : 'main'}
-          namespaceLabel={isOjMode ? 'OJ 副导航' : undefined}
-          introEyebrow={
-            isOjMode ? `${ojResourceCount} 个 XCPC / 刷题 / 软件开发资源` : undefined
-          }
-          introTitle={isOjMode ? '按分类挑选最趁手的刷题资源' : undefined}
-          introDescription={
-            isOjMode
-              ? '信息门户、基础学习、刷题训练、竞赛资源、软件工具——按当前目标挑选。'
-              : undefined
-          }
-          categories={isOjMode ? ojCategories : undefined}
-          services={
-            isOjMode
-              ? ojCategories.flatMap((category) => ojServicesByCategory[category.slug])
-              : undefined
-          }
-          serviceBySlug={isOjMode ? ojServiceBySlug : undefined}
-          servicesByCategory={isOjMode ? ojServicesByCategory : undefined}
-          spatialState={spatialState}
-          recent={recent}
-          direct={isOjMode || renderMode === '2d'}
-          onCategory={focusCategory}
-          onService={focusService}
-          onDirectVisit={recordVisit}
-        />
+        <Directory spatialState={spatialState} recent={recent} query={query} direct={online}
+          onService={focusService} onDirectVisit={recordVisit} onReset={() => { setQuery(''); goHome() }} />
       </main>
-
-      <footer className="site-footer">
-        <div>
-          <strong>E时代</strong>
-          <span>科技创新，连接未来</span>
-        </div>
-        <nav aria-label="站点相关链接">
-          <a href="https://we.emoera.com/" target="_blank" rel="noopener noreferrer nofollow">
-            关于我们
-          </a>
-          <a href="https://www.qifalab.cn/" target="_blank" rel="noopener noreferrer nofollow">
-            技术支持
-          </a>
-          <a
-            href="https://docs.qq.com/aio/DVHZpRFFTdUVIYlV2?p=BvAba1pUjsuoDHKNY65azz"
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-          >
-            更新日志
-          </a>
-          <a
-            href="https://www.qifalab.cn/qifalab-v1/contact.html"
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-          >
-            意见反馈
-          </a>
-        </nav>
-        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer nofollow">
-          蜀ICP备2024055741号
-        </a>
-        <span>© {new Date().getFullYear()} E时代科技</span>
-      </footer>
+      <SiteFooter />
 
       <Modal
         open={Boolean(selectedService && !helpOpen)}
@@ -976,24 +633,20 @@ function App() {
                 <span>01</span>
                 <strong>按分类浏览</strong>
                 <p>
-                  {isOjMode
-                    ? '按信息门户、基础学习、刷题训练、竞赛资源、软件工具查看 XCPC 站群。'
-                    : '按成员项目、产品服务、通行证生态链、团队与官网查看社团入口。'}
+                  按成员项目、产品服务、通行证生态链、团队与官网查看社团入口。
                 </p>
               </div>
               <div>
                 <span>02</span>
                 <strong>搜索资源</strong>
                 <p>
-                  {isOjMode
-                    ? '输入刷题站名称或简介，直接跳到对应的 OJ 资源。'
-                    : '输入服务名称或说明，直接找到对应的社团服务卡片。'}
+                  输入服务名称或说明，直接找到对应的社团服务卡片。
                 </p>
               </div>
               <div>
                 <span>03</span>
-                <strong>切换主/副导航</strong>
-                <p>右上角胶囊可一键在 E时代服务导航与 OJ 刷题导航间切换。</p>
+                <strong>切换栏目</strong>
+                <p>顶部的服务导航与刷题导航始终可见，下划线标明当前栏目。</p>
               </div>
             </div>
             <dl className="shortcut-list">
@@ -1011,10 +664,10 @@ function App() {
               </div>
               <div>
                 <dt>Alt O</dt>
-                <dd>切换主/副导航</dd>
+                <dd>切换栏目</dd>
               </div>
               <div>
-                <dt>Alt 1–{isOjMode ? '5' : '4'}</dt>
+                <dt>Alt 1–4</dt>
                 <dd>聚焦区域</dd>
               </div>
               <div>

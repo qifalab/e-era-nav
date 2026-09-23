@@ -2,7 +2,6 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { preferenceKeys } from './lib/preferences'
-import { ojResourceCount } from './data/ojResources'
 
 vi.mock('./scene/SpatialScene', () => ({
   default: ({ onCategory, onService, onFallback }) => (
@@ -44,29 +43,14 @@ describe('E时代社团服务导航', () => {
     render(<App />)
 
     expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
-    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
-    const heroTitle = screen.getByRole('heading', {
-      level: 1,
-      name: /E时代社团\s*服务导航/,
-    })
-    expect(heroTitle).toBeVisible()
-    expect([...heroTitle.querySelectorAll('span')].map((span) => span.textContent)).toEqual([
-      'E时代社团',
-      '服务导航',
-    ])
-    expect(screen.getByText(/快速访问社团开发、通行证与团队服务/)).toBeVisible()
-    expect(screen.queryByText(/让每个入口|拥有自己的位置|Spatial Service Atlas/)).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('navigation', { name: '当前服务路径' }),
-    ).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '首页' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '服务导航' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: '刷题导航' })).toHaveAttribute('href', '/oj/')
+    expect(screen.getByRole('heading', { level: 1, name: '服务导航' })).toBeVisible()
+    expect(screen.getByText('社团产品、成员作品与团队入口')).toBeVisible()
     expect(screen.getAllByTestId('service-card')).toHaveLength(18)
-    expect(screen.getByText('产品服务', { selector: '.region-legend strong' })).toBeInTheDocument()
-    expect(screen.getByText('通行证生态链', { selector: '.region-legend strong' })).toBeInTheDocument()
-    expect(screen.getByText('团队与官网', { selector: '.region-legend strong' })).toBeInTheDocument()
-    expect(
-      screen.getByText('E时代社团成员项目', { selector: '.region-legend strong' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '服务分类' })).toHaveTextContent('成员项目')
+    expect(screen.getByRole('navigation', { name: '服务分类' })).toHaveTextContent('产品服务')
+    expect(screen.getByRole('group', { name: '服务展示方式' })).toBeVisible()
   })
 
   it('使用本地品牌资产且不把品牌 Logo 用作模块图形', async () => {
@@ -76,10 +60,6 @@ describe('E时代社团服务导航', () => {
     expect(screen.getByAltText('E时代品牌标识')).toHaveAttribute(
       'src',
       '/brand/e-era-logo-96.png',
-    )
-    expect(screen.getByAltText('E时代协会品牌标识')).toHaveAttribute(
-      'src',
-      '/brand/e-era-logo-192.png',
     )
     const serviceIcons = [...container.querySelectorAll('[data-original-icon]')]
     expect(serviceIcons).toHaveLength(18)
@@ -112,7 +92,7 @@ describe('E时代社团服务导航', () => {
     expect(screen.queryByText('收藏')).not.toBeInTheDocument()
     expect(preferenceKeys.favorites).toBeUndefined()
 
-    fireEvent.click(screen.getByRole('button', { name: '查看 E时代云服务 详情' }))
+    fireEvent.click(screen.getByRole('button', { name: '模拟聚焦云服务' }))
     const serviceDialog = screen.getByRole('dialog', { name: 'E时代云服务' })
     const visit = within(serviceDialog).getByRole('link', { name: '访问服务' })
     expect(visit).toHaveAttribute('href', 'https://cloud.emoera.com/')
@@ -296,45 +276,26 @@ describe('E时代社团服务导航', () => {
     await screen.findByTestId('spatial-scene')
 
     expect(screen.getByText(/当前离线/)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '查看 E时代云服务 详情' }))
+    fireEvent.click(screen.getByRole('button', { name: '模拟聚焦云服务' }))
     expect(
       screen.getByRole('button', { name: '访问服务' }),
     ).toBeDisabled()
   })
 
-  it('右上角胶囊可切换主/副导航并隔离资源与渲染模式', async () => {
+  it('持久栏目不与显示模式混淆，后退恢复分类并清除过期提示', async () => {
     render(<App />)
     await screen.findByTestId('spatial-scene')
-
-    // 默认主导航：18 个社团服务卡片 + 3D 场景。
-    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
+    const nav = screen.getByRole('navigation', { name: '导航栏目' })
+    expect(within(nav).getByRole('link', { name: '服务导航' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: '刷题导航' })).not.toHaveAttribute('aria-current')
+    fireEvent.click(screen.getByRole('button', { name: '切换到2D模式' }))
+    expect(within(nav).queryByRole('button')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '产品服务', exact: true }))
+    expect(screen.getAllByTestId('service-card')).toHaveLength(6)
+    window.history.replaceState({}, '', '/')
+    fireEvent.popState(window)
     expect(screen.getAllByTestId('service-card')).toHaveLength(18)
-
-    // 切到副导航（OJ 刷题）。
-    fireEvent.click(
-      screen.getByRole('button', { name: '切换到副导航：OJ 刷题资源' }),
-    )
-    expect(window.location.search).toContain('namespace=oj')
-    expect(screen.getByText('E时代 OJ 刷题导航', { selector: '.brand strong' })).toBeVisible()
-    expect(screen.queryByTestId('spatial-scene')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: /E时代 OJ\s*刷题资源导航/ })).toBeInTheDocument()
-    expect(screen.getByText('Codeforces')).toBeInTheDocument()
-    expect(screen.getByText('洛谷')).toBeInTheDocument()
-    expect(screen.getAllByTestId('service-card')).toHaveLength(ojResourceCount)
-    expect(screen.queryByText('算法入门指北')).not.toBeInTheDocument()
-    const codeforces = screen.getByRole('link', { name: '打开 Codeforces' })
-    expect(codeforces).toHaveAttribute('href', 'https://codeforces.com/')
-    expect(codeforces).toHaveAttribute('rel', 'noopener noreferrer nofollow')
-    // 3D 模式切换在副导航下被禁用（强制 2D 列表）。
-    expect(
-      screen.getByRole('button', { name: '副导航固定为 2D 列表' }),
-    ).toBeDisabled()
-
-    // 切回主导航。
-    fireEvent.click(screen.getByRole('button', { name: '切换到主导航：E时代社团服务' }))
-    expect(window.location.search).not.toContain('namespace=oj')
-    expect(screen.getByText('E时代社团服务导航', { selector: '.brand strong' })).toBeVisible()
-    expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
-    expect(screen.getAllByTestId('service-card')).toHaveLength(18)
+    expect(screen.queryByText('已手动切换为 2D 服务列表。')).not.toBeInTheDocument()
+    expect(document.title).toBe('服务导航 · E时代导航')
   })
 })

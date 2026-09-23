@@ -1,4 +1,4 @@
-// 独立刷题导航站数据
+// 刷题导航的唯一内容源；旧入口通过 ojNavigation 映射到这里。
 // 字段：name 站点名、description 简介、url 官方链接、tags 标签短语、accent 主题色、category 分类
 
 export const categories = [
@@ -7,9 +7,16 @@ export const categories = [
   { id: 'platform', name: '刷题平台', accent: '#22c55e' },
   { id: 'contest', name: '竞赛资源', accent: '#ff7a45' },
   { id: 'dev', name: '软件开发', accent: '#8b5cf6' },
+  { id: 'info', name: '信息门户', accent: '#4f8fc9' },
 ]
 
 export const ojs = [
+  // Preserve URLs unique to the former embedded directory; don't guess aliases.
+  { slug: 'emoera-portal', name: 'E时代官网', description: '社团官方主页，了解 E时代文化与活动', url: 'https://www.emoera.com/', tags: ['社团', '官网'], category: 'info', accent: '#4f8fc9' },
+  { slug: 'xcpcio', name: 'XCPCIO', description: 'XCPC 榜单查询，跟踪比赛成绩', url: 'https://xcpcio.com/zh/guide/', tags: ['XCPC', '榜单'], category: 'contest', accent: '#06b6d4' },
+  { slug: 'yuantiji', name: '源题姬', description: '搜索题目来源及相关比赛题目', url: 'https://yuantiji.ac/', tags: ['题目来源', '查询'], category: 'contest', accent: '#10b981' },
+  { slug: 'c16h22o4', name: 'c16h22o4', description: '蓝桥杯学校与选手信息查询', url: 'https://c16h22o4.github.io/', tags: ['蓝桥杯', '查询'], category: 'contest', accent: '#f43f5e' },
+
   // === 基础学习（知识网站、课程、教学） ========================================
   {
     slug: 'oi-wiki',
@@ -265,6 +272,7 @@ export const stats = {
   platform: 0,
   contest: 0,
   dev: 0,
+  info: 0,
 }
 
 for (const oj of ojs) {

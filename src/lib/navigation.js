@@ -1,3 +1,4 @@
+import { buildOjLocation, parseOjLocation } from './ojNavigation'
 import {
   ojCategories,
   ojCategoryBySlug,
@@ -56,6 +57,10 @@ export function createSpatialState(category = null, service = null, namespace = 
 
 export function parseLocation(search = '') {
   const params = new URLSearchParams(search)
+  if (params.get('namespace') === NAMESPACES.OJ) {
+    const oj = parseOjLocation(search)
+    return createSpatialState(oj.category, oj.service, NAMESPACES.OJ)
+  }
   return createSpatialState(
     params.get('category'),
     params.get('service'),
@@ -65,6 +70,7 @@ export function parseLocation(search = '') {
 
 export function buildLocation(state) {
   const safeState = createSpatialState(state?.category, state?.service, state?.namespace)
+  if (safeState.namespace === NAMESPACES.OJ) return buildOjLocation(safeState)
   const params = new URLSearchParams()
 
   if (safeState.namespace && safeState.namespace !== NAMESPACES.MAIN) {
@@ -80,7 +86,7 @@ export function buildLocation(state) {
 export function isSafeExternalUrl(value, namespace = NAMESPACES.MAIN) {
   try {
     const url = new URL(value)
-    if (url.protocol !== 'https:') return false
+    if (url.protocol !== 'https:' && !(namespace === NAMESPACES.OJ && url.protocol === 'http:')) return false
     return pickDestinationSet(namespace).has(url.href)
   } catch {
     return false
