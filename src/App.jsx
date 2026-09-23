@@ -88,7 +88,6 @@ function BreadcrumbTrail({
 
 function App() {
   const capabilities = useMemo(() => detectCapabilities(), [])
-  const compactViewport = window.matchMedia('(max-width: 720px)').matches
   const initialState = useMemo(() => parseLocation(window.location.search), [])
   const [spatialState, setSpatialState] = useState(() => initialState)
   const [theme, setTheme] = useState(() => {
@@ -96,19 +95,13 @@ function App() {
     if (stored === 'light' || stored === 'dark') return stored
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
-  const [renderMode, setRenderMode] = useState(() => {
-    if (compactViewport) return '2d'
-    const stored = getStoredValue(preferenceKeys.renderMode)
-    if (stored === '2d') return '2d'
-    if (stored === '3d' && capabilities.recommendedMode === '3d') return '3d'
-    return capabilities.recommendedMode
-  })
+  // Start each visit in 3D; an old preference or a previous GPU failure must not hide it.
+  // Small devices use the scene's low-quality tier instead of losing the model entirely.
+  const [renderMode, setRenderMode] = useState(() => capabilities.recommendedMode)
   const [modeNotice, setModeNotice] = useState(() =>
     capabilities.recommendedMode === '2d'
-        ? '已根据设备能力启用轻量 2D 模式。'
-        : compactViewport
-          ? '已根据小屏触控条件启用轻量 2D 模式。'
-          : '',
+        ? '当前设备无法显示 3D，已为你打开服务列表。'
+        : '',
   )
   const [recent, setRecent] = useState(() => getStoredArray(preferenceKeys.recent))
   const [query, setQuery] = useState('')
@@ -382,18 +375,15 @@ function App() {
       }
       setRenderMode('3d')
       setModeNotice('')
-      setStoredValue(preferenceKeys.renderMode, '3d')
       return
     }
     setRenderMode('2d')
     setModeNotice('已手动切换为 2D 服务列表。')
-    setStoredValue(preferenceKeys.renderMode, '2d')
   }
 
   const fallbackTo2d = useCallback((reason) => {
     setRenderMode('2d')
     setModeNotice(reason)
-    setStoredValue(preferenceKeys.renderMode, '2d')
   }, [])
 
   const recordVisit = (slug) => {
@@ -414,6 +404,7 @@ function App() {
         </button>
       </SiteHeader>
       <main className="site-main">
+        <div className={`service-hero ${renderMode === '3d' ? 'has-scene' : ''}`}>
         <div className="page-intro">
           <div><h1 id="hero-title">服务导航</h1><p>社团产品、成员作品与团队入口</p></div>
         <div className="catalog-search search-console" id="global-search">
@@ -493,12 +484,31 @@ function App() {
           )}
         </div>
         </div>
+        {renderMode === '3d' && (
+          <section className={`spatial-stage spatial-stage--3d ${spatialState.category ? 'is-focused' : ''}`} aria-label="3D 服务展示">
+            <SceneErrorBoundary onError={() => fallbackTo2d('3D 加载失败，已切换到服务列表。')} fallback={null}>
+              <link rel="preload" href={sculptureUrl} as="fetch" crossOrigin="anonymous" />
+              <Suspense fallback={<div className="scene-loading" role="status"><span />正在加载 3D 服务模型…</div>}>
+                <SpatialScene spatialState={spatialState} onCategory={focusCategory} onService={focusService}
+                  onFallback={fallbackTo2d} theme={theme} reducedMotion={reducedMotion} cameraRevision={cameraRevision}
+                  paused={modalOpen} performanceProfile={capabilities} />
+              </Suspense>
+            </SceneErrorBoundary>
+            <div className="scene-tools">
+              <span><span className="scene-hint-desktop">拖拽查看</span><span className="scene-hint-mobile">双指旋转 · 单指滚动</span> · 点击图标了解服务</span>
+              <button type="button" onClick={goHome} aria-label="返回导航首页">重置视角</button>
+            </div>
+          </section>
+        )}
+        </div>
         <div className="service-toolbar">
           <nav className="catalog-filters region-legend" aria-label="服务分类">
             <button type="button" aria-pressed={!spatialState.category} onClick={goHome}>全部 <small>{services.length}</small></button>
             {categories.map(category => (
               <button type="button" key={category.slug} aria-pressed={spatialState.category === category.slug}
+                style={{ '--category-color': category.accent }}
                 onClick={() => focusCategory(category.slug)}>
+                <span className="category-dot" aria-hidden="true" />
                 {category.shortName}
               </button>
             ))}
@@ -513,22 +523,6 @@ function App() {
         <BreadcrumbTrail category={selectedCategory} service={selectedService} onHome={goHome} onCategory={focusCategory} />
         {!online && <div className="system-banner" role="status"><WifiOff aria-hidden="true" />当前离线，仍可浏览服务目录，恢复网络后可访问服务。</div>}
         {modeNotice && <div className="system-banner system-banner--neutral" role="status">{modeNotice}</div>}
-        {renderMode === '3d' && (
-          <section className={`spatial-stage spatial-stage--3d ${spatialState.category ? 'is-focused' : ''}`} aria-label="3D 服务展示">
-            <SceneErrorBoundary onError={() => fallbackTo2d('3D 加载失败，已切换到服务列表。')} fallback={null}>
-              <link rel="preload" href={sculptureUrl} as="fetch" crossOrigin="anonymous" />
-              <Suspense fallback={<div className="scene-loading" role="status"><span />正在加载 3D 服务模型…</div>}>
-                <SpatialScene spatialState={spatialState} onCategory={focusCategory} onService={focusService}
-                  onFallback={fallbackTo2d} theme={theme} reducedMotion={reducedMotion} cameraRevision={cameraRevision}
-                  paused={modalOpen} performanceProfile={capabilities} />
-              </Suspense>
-            </SceneErrorBoundary>
-            <div className="scene-tools">
-              <span>拖拽查看 · 点击图标了解服务</span>
-              <button type="button" onClick={goHome} aria-label="返回导航首页">重置视角</button>
-            </div>
-          </section>
-        )}
         <Directory spatialState={spatialState} recent={recent} query={query} direct={online}
           onService={focusService} onDirectVisit={recordVisit} onReset={() => { setQuery(''); goHome() }} />
       </main>

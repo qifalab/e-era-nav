@@ -23,14 +23,9 @@ export function detectWebGL(canvas = document.createElement('canvas')) {
   }
 }
 
-export function chooseRenderMode({
-  webgl,
-  hardwareConcurrency = 8,
-  deviceMemory = 8,
-  saveData = false,
-}) {
-  if (!webgl || saveData || hardwareConcurrency <= 2 || deviceMemory <= 2) return '2d'
-  return '3d'
+export function chooseRenderMode({ webgl }) {
+  // CPU, memory and network hints select quality in SpatialScene, not visibility.
+  return webgl ? '3d' : '2d'
 }
 
 export function detectCapabilities() {

@@ -2,6 +2,7 @@ import { ArrowUpRight, Clock3 } from 'lucide-react'
 import { categoryBySlug, serviceBySlug, services } from '../data/services'
 import { isSafeExternalUrl } from '../lib/navigation'
 import ServiceIcon from './ServiceIcon'
+import { getServiceIconConfig } from '../icons/originalIconRegistry'
 
 export default function Directory({ spatialState, recent, query = '', direct = false, onService, onDirectVisit, onReset }) {
   const needle = query.toLocaleLowerCase('zh-CN').replace(/\s+/g, '')
@@ -34,6 +35,7 @@ export default function Directory({ spatialState, recent, query = '', direct = f
             </>
             return (
               <article key={service.slug} className={`catalog-card service-card ${spatialState.service === service.slug ? 'is-selected' : ''}`}
+                style={{ '--card-color': getServiceIconConfig(service.slug).geometry.color }}
                 data-testid="service-card" data-service={service.slug}>
                 {direct && isSafeExternalUrl(service.url) ? (
                   <a href={service.url} target="_blank" rel="noopener noreferrer nofollow" data-direct-service={service.slug}

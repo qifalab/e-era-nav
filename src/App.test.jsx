@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { preferenceKeys } from './lib/preferences'
+import { detectCapabilities } from './lib/capabilities'
 
 vi.mock('./scene/SpatialScene', () => ({
   default: ({ onCategory, onService, onFallback }) => (
@@ -20,13 +21,13 @@ vi.mock('./scene/SpatialScene', () => ({
 }))
 
 vi.mock('./lib/capabilities', () => ({
-  detectCapabilities: () => ({
+  detectCapabilities: vi.fn(() => ({
     webgl: true,
     hardwareConcurrency: 8,
     deviceMemory: 8,
     saveData: false,
     recommendedMode: '3d',
-  }),
+  })),
 }))
 
 describe('E时代社团服务导航', () => {
@@ -51,6 +52,30 @@ describe('E时代社团服务导航', () => {
     expect(screen.getByRole('navigation', { name: '服务分类' })).toHaveTextContent('成员项目')
     expect(screen.getByRole('navigation', { name: '服务分类' })).toHaveTextContent('产品服务')
     expect(screen.getByRole('group', { name: '服务展示方式' })).toBeVisible()
+  })
+
+  it('手机端默认显示 3D，忽略旧版本留下的 2D 偏好', async () => {
+    localStorage.setItem(preferenceKeys.renderMode, '2d')
+    const originalMatchMedia = window.matchMedia
+    const media = vi.spyOn(window, 'matchMedia').mockImplementation(query => ({
+      ...originalMatchMedia(query),
+      matches: query === '(max-width: 720px)',
+    }))
+    try {
+      render(<App />)
+      expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '切换到3D模式' })).toHaveAttribute('aria-pressed', 'true')
+    } finally {
+      media.mockRestore()
+    }
+  })
+
+  it('无 WebGL 时保留完整服务列表和提示', () => {
+    vi.mocked(detectCapabilities).mockReturnValueOnce({ webgl: false, recommendedMode: '2d' })
+    render(<App />)
+    expect(screen.queryByTestId('spatial-scene')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('service-card')).toHaveLength(18)
+    expect(screen.getByText('当前设备无法显示 3D，已为你打开服务列表。')).toBeVisible()
   })
 
   it('使用本地品牌资产且不把品牌 Logo 用作模块图形', async () => {
@@ -126,12 +151,16 @@ describe('E时代社团服务导航', () => {
   })
 
   it('WebGL 运行失败时自动降级且功能不丢失', async () => {
-    render(<App />)
+    const firstVisit = render(<App />)
     await screen.findByTestId('spatial-scene')
 
     fireEvent.click(screen.getByRole('button', { name: '模拟 WebGL 丢失' }))
     expect(screen.getByText('模拟上下文丢失')).toBeInTheDocument()
     expect(screen.getAllByTestId('service-card')).toHaveLength(18)
+    expect(localStorage.getItem(preferenceKeys.renderMode)).toBeNull()
+    firstVisit.unmount()
+    render(<App />)
+    expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
   })
 
   it('默认不弹操作提示，仅显式帮助动作打开并恢复焦点', () => {
@@ -228,7 +257,7 @@ describe('E时代社团服务导航', () => {
     fireEvent.click(screen.getByRole('button', { name: '切换到2D模式' }))
     fireEvent.click(screen.getByRole('button', { name: '切换到3D模式' }))
     expect(await screen.findByTestId('spatial-scene')).toBeInTheDocument()
-    expect(localStorage.getItem(preferenceKeys.renderMode)).toBe('3d')
+    expect(localStorage.getItem(preferenceKeys.renderMode)).toBeNull()
   })
 
   it('2D 卡片直接链接，搜索仍保持详情流程', async () => {

@@ -592,7 +592,7 @@
   margin-left: auto;
 }
 
-.scene-canvas { background: var(--canvas-bg); }
+.scene-canvas { background: transparent; }
 .scene-canvas canvas { transition: opacity .25s ease; }
 .scene-canvas[data-models-ready='false'] canvas { opacity: 0; }
 .scene-loading-panel {

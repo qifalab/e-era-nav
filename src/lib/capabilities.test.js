@@ -14,12 +14,15 @@ describe('render capability selection', () => {
   })
 
   it.each([
-    { webgl: false, hardwareConcurrency: 8, deviceMemory: 8, saveData: false },
     { webgl: true, hardwareConcurrency: 2, deviceMemory: 8, saveData: false },
     { webgl: true, hardwareConcurrency: 8, deviceMemory: 2, saveData: false },
     { webgl: true, hardwareConcurrency: 8, deviceMemory: 8, saveData: true },
-  ])('falls back to 2D for constrained devices', (capabilities) => {
-    expect(chooseRenderMode(capabilities)).toBe('2d')
+  ])('keeps 3D visible while device hints lower scene quality', (capabilities) => {
+    expect(chooseRenderMode(capabilities)).toBe('3d')
+  })
+
+  it('uses the list when WebGL is unavailable', () => {
+    expect(chooseRenderMode({ webgl: false })).toBe('2d')
   })
 
   it('reports unavailable WebGL without throwing', () => {

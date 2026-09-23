@@ -1,5 +1,5 @@
-.practice-page { --accent: #6249a8; --accent-soft: #f0ebfa; min-height: 100vh; }
-:root[data-theme='dark'] .practice-page { --accent: #c5b4f3; --accent-soft: #342b49; }
+.practice-page { --accent: #5946c5; --accent-soft: rgba(108,92,231,.1); min-height: 100vh; background: radial-gradient(ellipse 650px 320px at 15% 90px,color-mix(in srgb,#a29bfe var(--color-wash),transparent),transparent),radial-gradient(ellipse 600px 400px at 90% 180px,color-mix(in srgb,#79c9bd var(--color-wash),transparent),transparent),var(--page-bg); }
+:root[data-theme='dark'] .practice-page { --accent: #a89cff; --accent-soft: rgba(139,124,255,.15); }
 .practice-filters { margin-bottom: 24px; }
 .practice-page .directory-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
 .practice-page .directory-summary h2 { font-size: 16px; font-weight: 650; margin: 0; }
