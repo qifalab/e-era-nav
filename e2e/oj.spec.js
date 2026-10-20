@@ -43,7 +43,7 @@ test('刷题搜索筛选可恢复，窄屏导航文字可见且通过无障碍�
   await expect(page.getByRole('article')).toHaveCount(1)
   await page.getByRole('button', { name: '清除搜索' }).click()
   await page.getByRole('button', { name: /基础学习/ }).click()
-  await expect(page.getByRole('article')).toHaveCount(7)
+  await expect(page.getByRole('article')).toHaveCount(8)
   await page.getByRole('button', { name: /竞赛资源/ }).click()
   await page.goBack()
   await expect(page.getByRole('button', { name: /基础学习/ })).toHaveAttribute('aria-pressed', 'true')

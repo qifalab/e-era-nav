@@ -29,6 +29,16 @@ export const ojs = [
     badge: '📚 算法百科',
   },
   {
+    slug: 'algorithm-templates',
+    name: '算法模板库',
+    description: '按算法分类整理的竞赛模板速查，包含常用代码模板、相关题目与提交来源。',
+    url: 'https://xirnej.github.io/algorithm-templates/',
+    tags: ['算法模板', '竞赛', '速查'],
+    category: 'learn',
+    accent: '#5266eb',
+    badge: '📋 模板速查',
+  },
+  {
     slug: 'acwing',
     name: 'AcWing',
     description: '早期热门算法学习平台。注：近年更新迟滞，推荐结合其他平台使用。',
